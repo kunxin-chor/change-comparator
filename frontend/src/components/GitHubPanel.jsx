@@ -131,8 +131,6 @@ function GitHubPanel({ onLoadChangesets }) {
           .map(item => ({
             path: `/${item.path}`,
             url: `https://raw.githubusercontent.com/${parsed.owner}/${parsed.repo}/${commit.sha}/${item.path}`,
-            content: '', // Will be fetched when loaded
-            language: '', // Will be determined when loaded
             comments: {} // Empty initially, can be added later
           }));
 

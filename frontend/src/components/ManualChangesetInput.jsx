@@ -34,15 +34,14 @@ function ManualChangesetInput({ onLoadChangesets }) {
         }
       }
 
-      // Save the structure (URLs and paths)
-      // Comments will be saved separately after loading and adding them
+      // Save only URLs and paths (content will be fetched on load)
       const storageChangesets = changesets.map((cs, idx) => ({
         version: idx + 1,
         name: cs.name,
         files: cs.files.map(file => ({
           path: file.path,
           url: file.url,
-          comments: {}
+          comments: {} // Empty initially
         }))
       }));
 

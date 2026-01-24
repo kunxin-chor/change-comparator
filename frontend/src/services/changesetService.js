@@ -29,20 +29,16 @@ export function getLanguageFromPath(path) {
   return languageMap[ext] || 'text';
 }
 
-export async function fetchFileContent(url) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch file: ${response.statusText}`);
-  }
-  return await response.text();
-}
-
 export async function loadChangesetsFromUrls(inputChangesets) {
   const loadedChangesets = await Promise.all(
     inputChangesets.map(async (changeset, index) => {
       const files = await Promise.all(
         changeset.files.map(async (file) => {
-          const content = await fetchFileContent(file.url);
+          const response = await fetch(file.url);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch ${file.path}: ${response.statusText}`);
+          }
+          const content = await response.text();
           const language = getLanguageFromPath(file.path);
           
           return {
@@ -70,22 +66,30 @@ export async function loadChangesetsFromSaved(changeset) {
     changeset.map(async (cs) => {
       const files = await Promise.all(
         cs.files.map(async (file) => {
-          // Use saved content if available, otherwise fetch from URL
-          let content = file.content || '';
+          let content = '';
           
-          // Only fetch if no content saved and URL is valid (not a placeholder)
-          if (!content && file.url && !file.url.startsWith('#')) {
-            content = await fetchFileContent(file.url);
+          // Fetch from URL if it's valid (not a placeholder)
+          if (file.url && !file.url.startsWith('#')) {
+            try {
+              const response = await fetch(file.url);
+              if (!response.ok) {
+                throw new Error(`${response.status} ${response.statusText}`);
+              }
+              content = await response.text();
+            } catch (error) {
+              console.error(`Failed to fetch ${file.path}:`, error);
+              content = `// Error loading file: ${error.message}`;
+            }
           }
           
-          const language = file.language || getLanguageFromPath(file.path);
+          const language = getLanguageFromPath(file.path);
           
           return {
             id: file.path,
             language: language,
             content: content,
             url: file.url,
-            comments: file.comments || {} // Preserve comments from storage
+            comments: file.comments || {}
           };
         })
       );

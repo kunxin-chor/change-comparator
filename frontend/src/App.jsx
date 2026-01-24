@@ -319,7 +319,7 @@ function App() {
     }
 
     try {
-      // Save the complete changeset structure with content and comments
+      // Save only URLs and comments (Hybrid approach - fetch content on-demand)
       const storageChangesets = targetChangesets.map(cs => ({
         version: cs.version,
         name: cs.name,
@@ -330,14 +330,13 @@ function App() {
         files: cs.files.map(file => ({
           path: file.id,
           url: file.url || `#${file.id}`,
-          content: file.content, // Save the actual content
-          language: file.language,
+          // Don't save content - will be fetched from URL when loaded
           comments: file.comments || {}
         }))
       }));
 
       localStorage.setItem(`changeset_${key}`, JSON.stringify(storageChangesets));
-      alert(`Saved successfully as "${key}" with all comments!`);
+      alert(`Saved successfully as "${key}" with comments!\n(Content will be loaded from URLs)`);
     } catch (error) {
       alert('Error saving: ' + error.message);
     }
