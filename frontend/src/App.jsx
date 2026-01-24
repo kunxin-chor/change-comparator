@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Route, Link, useLocation } from 'wouter'
 import { Container, Nav, Navbar, Button } from 'react-bootstrap'
 import CodeDiffViewer from './components/CodeDiffViewer'
@@ -201,6 +201,28 @@ function App() {
   const showDiffViewer = (location === '/' || location === '/demo') || 
                           (location === '/manual' && manualChangesets.length > 0) ||
                           ((location === '/saved' || location === '/github') && loadedChangesets.length > 0);
+
+  // Sync timeline index with URL query parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const versionParam = params.get('version');
+    if (versionParam !== null) {
+      const versionIndex = parseInt(versionParam, 10);
+      if (!isNaN(versionIndex) && versionIndex >= 0) {
+        setTimelineIndex(versionIndex);
+      }
+    }
+  }, [location]);
+
+  // Update URL when timeline index changes
+  useEffect(() => {
+    if (activeChangesets.length > 1) {
+      const params = new URLSearchParams(window.location.search);
+      params.set('version', timelineIndex.toString());
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [timelineIndex, activeChangesets.length]);
 
   // Event handlers
   const handleLoadManualChangesets = async (inputChangesets) => {
