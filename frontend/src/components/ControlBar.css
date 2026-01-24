@@ -1,0 +1,9 @@
+.control-bar {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 20px 20px 20px;
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}

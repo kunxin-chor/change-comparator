@@ -1,33 +1,35 @@
-.file-selector {
+.timeline {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 20px 20px 20px;
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.file-selector-label {
+.timeline-label {
   font-size: 14px;
   font-weight: 600;
   color: #24292e;
 }
 
-.file-dropdown {
+.timeline-dropdown {
   padding: 8px 12px;
   font-size: 14px;
-  font-family: 'Courier New', monospace;
   color: #24292e;
   background: white;
   border: 2px solid #e1e4e8;
   border-radius: 6px;
   cursor: pointer;
-  min-width: 200px;
+  min-width: 400px;
   transition: border-color 0.2s;
 }
 
-.file-dropdown:hover {
+.timeline-dropdown:hover {
   border-color: #0366d6;
 }
 
-.file-dropdown:focus {
+.timeline-dropdown:focus {
   outline: none;
   border-color: #0366d6;
   box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
