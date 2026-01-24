@@ -179,10 +179,54 @@
 .comment-indicator {
   margin-left: 8px;
   font-size: 14px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
 }
 
-.comment-display {
-  padding: 20px;
+.comment-indicator.clickable {
+  cursor: pointer;
+}
+
+.comment-indicator.clickable:hover {
+  opacity: 1;
+}
+
+.add-comment-btn {
+  margin-left: 8px;
+  padding: 2px 6px;
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid #d1d5da;
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s;
+}
+
+.diff-row:hover .add-comment-btn {
+  opacity: 0.6;
+}
+
+.add-comment-btn:hover {
+  opacity: 1 !important;
+  background: #f6f8fa;
+  border-color: #0366d6;
+}
+
+.edit-comment-btn {
+  padding: 4px 8px;
+  margin-right: 8px;
+  font-size: 14px;
+  background: transparent;
+  border: 1px solid #d1d5da;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.edit-comment-btn:hover {
+  background: #f6f8fa;
+  border-color: #0366d6;
 }
 
 .comment-header {

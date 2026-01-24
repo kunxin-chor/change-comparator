@@ -3,7 +3,7 @@ import * as Diff from 'diff'
 import ReactMarkdown from 'react-markdown'
 import './CodeDiffViewer.css'
 
-function CodeDiffViewer({ file1, file2, fileName, version1, version2, viewMode = 'hybrid' }) {
+function CodeDiffViewer({ file1, file2, fileName, version1, version2, viewMode = 'hybrid', onAddComment, onEditComment }) {
   const [selectedLineComment, setSelectedLineComment] = useState(null);
 
   const diff = Diff.diffLines(file1.content, file2.content);
@@ -100,7 +100,6 @@ function CodeDiffViewer({ file1, file2, fileName, version1, version2, viewMode =
                 <tr 
                   key={row.key} 
                   className={`diff-row ${row.type} ${row.comment ? 'has-comment' : ''} ${selectedLineComment?.key === row.key ? 'selected' : ''}`}
-                  onClick={() => row.comment && setSelectedLineComment({ ...row.comment, key: row.key, file: row.file, lineNum: row.lineNum })}
                 >
                   <td className="line-num">{row.lineNum}</td>
                   <td className="code-cell">
@@ -108,8 +107,22 @@ function CodeDiffViewer({ file1, file2, fileName, version1, version2, viewMode =
                       {row.type === 'removed' ? '-' : row.type === 'added' ? '+' : ' '}
                     </span>
                     <code>{row.line}</code>
-                    {row.comment && (
-                      <span className="comment-indicator">💬</span>
+                    {row.comment ? (
+                      <span 
+                        className="comment-indicator clickable"
+                        onClick={() => setSelectedLineComment({ ...row.comment, key: row.key, file: row.file, lineNum: row.lineNum, version: row.type === 'removed' ? version1 : version2 })}
+                        title="View comment"
+                      >
+                        💬
+                      </span>
+                    ) : onAddComment && (
+                      <button
+                        className="add-comment-btn"
+                        onClick={() => onAddComment(row.lineNum, fileName, row.type === 'removed' ? version1 : version2, row.type === 'removed' ? 'file1' : 'file2')}
+                        title="Add comment"
+                      >
+                        +💬
+                      </button>
                     )}
                   </td>
                 </tr>
@@ -123,15 +136,34 @@ function CodeDiffViewer({ file1, file2, fileName, version1, version2, viewMode =
             <div className="comment-display">
               <div className="comment-header">
                 <h3>Comment</h3>
-                <button 
-                  className="close-comment-btn"
-                  onClick={() => setSelectedLineComment(null)}
-                >
-                  ×
-                </button>
+                <div>
+                  {onEditComment && (
+                    <button 
+                      className="edit-comment-btn"
+                      onClick={() => {
+                        onEditComment(
+                          selectedLineComment.lineNum, 
+                          fileName, 
+                          selectedLineComment.version,
+                          selectedLineComment.key.includes('removed') ? 'file1' : 'file2',
+                          selectedLineComment
+                        );
+                      }}
+                      title="Edit comment"
+                    >
+                      ✏️
+                    </button>
+                  )}
+                  <button 
+                    className="close-comment-btn"
+                    onClick={() => setSelectedLineComment(null)}
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
               <div className="comment-meta">
-                <strong>{selectedLineComment.file}</strong> - Line {selectedLineComment.lineNum}
+                <strong>{selectedLineComment.file}</strong> - Line {selectedLineComment.lineNum} (v{selectedLineComment.version})
               </div>
               <div className="comment-content">
                 <ReactMarkdown>{selectedLineComment.markdown || selectedLineComment.text}</ReactMarkdown>
@@ -140,6 +172,7 @@ function CodeDiffViewer({ file1, file2, fileName, version1, version2, viewMode =
           ) : (
             <div className="comment-placeholder">
               <p>Click on a line with 💬 to view its comment</p>
+              <p className="text-muted small">Or click +💬 to add a new comment</p>
             </div>
           )}
         </div>

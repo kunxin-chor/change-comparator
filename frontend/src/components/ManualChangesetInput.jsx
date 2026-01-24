@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import './ManualChangesetInput.css'
+import { Container, Card, Form, Button, Row, Col, Alert } from 'react-bootstrap'
 
 function ManualChangesetInput({ onLoadChangesets }) {
   const [changesets, setChangesets] = useState([
@@ -34,7 +34,19 @@ function ManualChangesetInput({ onLoadChangesets }) {
         }
       }
 
-      localStorage.setItem(`changeset_${saveKey}`, JSON.stringify(changesets));
+      // Save the structure (URLs and paths)
+      // Comments will be saved separately after loading and adding them
+      const storageChangesets = changesets.map((cs, idx) => ({
+        version: idx + 1,
+        name: cs.name,
+        files: cs.files.map(file => ({
+          path: file.path,
+          url: file.url,
+          comments: {}
+        }))
+      }));
+
+      localStorage.setItem(`changeset_${saveKey}`, JSON.stringify(storageChangesets));
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
@@ -89,114 +101,129 @@ function ManualChangesetInput({ onLoadChangesets }) {
   };
 
   return (
-    <div className="manual-changeset-input">
-      <h2>Define Changesets Manually</h2>
-      <p className="instruction">Add URLs to raw file content for each version you want to compare.</p>
+    <Container className="my-4">
+      <Card>
+        <Card.Header>
+          <h4 className="mb-0">Define Changesets Manually</h4>
+        </Card.Header>
+        <Card.Body>
+          <p className="text-muted">Add URLs to raw file content for each version you want to compare.</p>
 
-      <form onSubmit={handleSubmit}>
+          <Form onSubmit={handleSubmit}>
         {changesets.map((changeset, csIndex) => (
-          <div key={csIndex} className="changeset-section">
-            <div className="changeset-header">
-              <h3>Version {csIndex + 1}</h3>
+          <Card key={csIndex} className="mb-3" bg="light">
+            <Card.Header className="d-flex justify-content-between align-items-center">
+              <h5 className="mb-0">Version {csIndex + 1}</h5>
               {changesets.length > 1 && (
-                <button
-                  type="button"
-                  className="remove-btn"
+                <Button
+                  variant="danger"
+                  size="sm"
                   onClick={() => removeChangeset(csIndex)}
                 >
                   Remove Version
-                </button>
+                </Button>
               )}
-            </div>
+            </Card.Header>
+            <Card.Body>
+              <Form.Group className="mb-3">
+                <Form.Label>Version Name:</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="e.g., Initial version"
+                  value={changeset.name}
+                  onChange={(e) => updateChangesetName(csIndex, e.target.value)}
+                  required
+                />
+              </Form.Group>
 
-            <div className="form-group">
-              <label>Version Name:</label>
-              <input
-                type="text"
-                className="input-field"
-                placeholder="e.g., Initial version"
-                value={changeset.name}
-                onChange={(e) => updateChangesetName(csIndex, e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="files-section">
-              <h4>Files:</h4>
-              {changeset.files.map((file, fileIndex) => (
-                <div key={fileIndex} className="file-row">
-                  <input
-                    type="text"
-                    className="input-field file-path"
-                    placeholder="File path (e.g., /src/index.js)"
-                    value={file.path}
-                    onChange={(e) => updateFile(csIndex, fileIndex, 'path', e.target.value)}
-                    required
-                  />
-                  <input
-                    type="url"
-                    className="input-field file-url"
-                    placeholder="URL to raw file content"
-                    value={file.url}
-                    onChange={(e) => updateFile(csIndex, fileIndex, 'url', e.target.value)}
-                    required
-                  />
-                  {changeset.files.length > 1 && (
-                    <button
-                      type="button"
-                      className="remove-file-btn"
-                      onClick={() => removeFile(csIndex, fileIndex)}
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button
-                type="button"
-                className="add-file-btn"
-                onClick={() => addFile(csIndex)}
-              >
-                + Add File
-              </button>
-            </div>
-          </div>
+              <div className="mb-3">
+                <h6>Files:</h6>
+                {changeset.files.map((file, fileIndex) => (
+                  <Row key={fileIndex} className="mb-2 align-items-center">
+                    <Col md={3}>
+                      <Form.Control
+                        type="text"
+                        placeholder="File path (e.g., /src/index.js)"
+                        value={file.path}
+                        onChange={(e) => updateFile(csIndex, fileIndex, 'path', e.target.value)}
+                        required
+                        style={{ fontFamily: 'monospace' }}
+                      />
+                    </Col>
+                    <Col md={8}>
+                      <Form.Control
+                        type="url"
+                        placeholder="URL to raw file content"
+                        value={file.url}
+                        onChange={(e) => updateFile(csIndex, fileIndex, 'url', e.target.value)}
+                        required
+                        style={{ fontFamily: 'monospace', fontSize: '0.9em' }}
+                      />
+                    </Col>
+                    <Col md={1}>
+                      {changeset.files.length > 1 && (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => removeFile(csIndex, fileIndex)}
+                        >
+                          ×
+                        </Button>
+                      )}
+                    </Col>
+                  </Row>
+                ))}
+                <Button
+                  variant="success"
+                  size="sm"
+                  onClick={() => addFile(csIndex)}
+                >
+                  + Add File
+                </Button>
+              </div>
+            </Card.Body>
+          </Card>
         ))}
 
-        <button type="button" className="add-changeset-btn" onClick={addChangeset}>
-          + Add Version
-        </button>
+            <Button variant="primary" onClick={addChangeset} className="mb-3">
+              + Add Version
+            </Button>
 
-        <div className="save-section">
-          <input
-            type="text"
-            className="input-field save-key-input"
-            placeholder="Enter key name to save (e.g., assignment-1)"
-            value={saveKey}
-            onChange={(e) => setSaveKey(e.target.value)}
-          />
-          <button type="button" className="save-btn" onClick={handleSave}>
-            Save to LocalStorage
-          </button>
-        </div>
+            <Row className="mb-3">
+              <Col md={8}>
+                <Form.Control
+                  type="text"
+                  placeholder="Enter key name to save (e.g., assignment-1)"
+                  value={saveKey}
+                  onChange={(e) => setSaveKey(e.target.value)}
+                />
+              </Col>
+              <Col md={4}>
+                <Button variant="secondary" onClick={handleSave} className="w-100">
+                  Save to LocalStorage
+                </Button>
+              </Col>
+            </Row>
 
-        <button type="submit" className="load-btn" disabled={loading}>
-          {loading ? 'Loading...' : 'Load Changesets'}
-        </button>
-      </form>
+            <Button type="submit" variant="success" disabled={loading} className="w-100">
+              {loading ? 'Loading...' : 'Load Changesets'}
+            </Button>
+          </Form>
 
-      {saveSuccess && (
-        <div className="success-message">
-          ✓ Saved successfully as "{saveKey}"
-        </div>
-      )}
+          {saveSuccess && (
+            <Alert variant="success" className="mt-3">
+              ✓ Saved successfully as "{saveKey}"
+            </Alert>
+          )}
 
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
-    </div>
+          {error && (
+            <Alert variant="danger" className="mt-3">
+              {error}
+            </Alert>
+          )}
+        </Card.Body>
+      </Card>
+    </Container>
   );
 }
 

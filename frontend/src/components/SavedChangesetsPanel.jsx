@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import './SavedChangesetsPanel.css'
+import { Container, Card, Row, Col, ListGroup, Button, Badge, Alert } from 'react-bootstrap'
 
 function SavedChangesetsPanel({ onLoadChangeset }) {
   const [savedKeys, setSavedKeys] = useState([]);
@@ -63,65 +63,94 @@ function SavedChangesetsPanel({ onLoadChangeset }) {
   };
 
   return (
-    <div className="saved-changesets-panel">
-      <h2>Saved Changesets</h2>
-      <p className="instruction">Load previously saved changesets from localStorage.</p>
+    <Container className="my-4">
+      <Card>
+        <Card.Header>
+          <h4 className="mb-0">Saved Changesets</h4>
+        </Card.Header>
+        <Card.Body>
+          <p className="text-muted">Load previously saved changesets from localStorage.</p>
 
-      <div className="saved-content">
-        <div className="saved-list">
-          <h3>Available Changesets ({savedKeys.length})</h3>
-          {savedKeys.length === 0 ? (
-            <p className="empty-message">No saved changesets found.</p>
-          ) : (
-            <div className="keys-list">
-              {savedKeys.map(key => (
-                <div
-                  key={key}
-                  className={`key-item ${selectedKey === key ? 'selected' : ''}`}
-                  onClick={() => handleSelectKey(key)}
-                >
-                  <span className="key-name">{key}</span>
-                  <button
-                    className="delete-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(key);
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+          <Row>
+            <Col md={4}>
+              <Card bg="light">
+                <Card.Header>
+                  <h6 className="mb-0">Available Changesets <Badge bg="primary">{savedKeys.length}</Badge></h6>
+                </Card.Header>
+                <Card.Body style={{ maxHeight: '500px', overflowY: 'auto', padding: 0 }}>
+                  {savedKeys.length === 0 ? (
+                    <Alert variant="info" className="m-3">No saved changesets found.</Alert>
+                  ) : (
+                    <ListGroup variant="flush">
+                      {savedKeys.map(key => (
+                        <ListGroup.Item
+                          key={key}
+                          active={selectedKey === key}
+                          onClick={() => handleSelectKey(key)}
+                          style={{ cursor: 'pointer' }}
+                          className="d-flex justify-content-between align-items-center"
+                        >
+                          <code>{key}</code>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(key);
+                            }}
+                          >
+                            ×
+                          </Button>
+                        </ListGroup.Item>
+                      ))}
+                    </ListGroup>
+                  )}
+                </Card.Body>
+              </Card>
+            </Col>
 
-        <div className="preview-panel">
-          <h3>Preview</h3>
-          {changesetPreview ? (
-            <div className="preview-content">
-              <p><strong>Versions:</strong> {changesetPreview.length}</p>
-              {changesetPreview.map((cs, idx) => (
-                <div key={idx} className="version-preview">
-                  <h4>Version {cs.version}: {cs.name}</h4>
-                  <p className="file-count">{cs.files.length} file(s)</p>
-                  <ul className="file-list">
-                    {cs.files.map((file, fIdx) => (
-                      <li key={fIdx}>{file.id}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-              <button className="load-btn" onClick={handleLoad}>
-                Load This Changeset
-              </button>
-            </div>
-          ) : (
-            <p className="empty-message">Select a changeset to preview</p>
-          )}
-        </div>
-      </div>
-    </div>
+            <Col md={8}>
+              <Card bg="light">
+                <Card.Header>
+                  <h6 className="mb-0">Preview</h6>
+                </Card.Header>
+                <Card.Body style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                  {changesetPreview ? (
+                    <>
+                      <Alert variant="info">
+                        <strong>Versions:</strong> {changesetPreview.length}
+                      </Alert>
+                      {changesetPreview.map((cs, idx) => (
+                        <Card key={idx} className="mb-3">
+                          <Card.Header>
+                            <strong>Version {cs.version}:</strong> {cs.name}
+                          </Card.Header>
+                          <Card.Body>
+                            <p className="text-muted mb-2">{cs.files.length} file(s)</p>
+                            <ListGroup variant="flush">
+                              {cs.files.map((file, fIdx) => (
+                                <ListGroup.Item key={fIdx}>
+                                  <code>{file.id || file.path}</code>
+                                </ListGroup.Item>
+                              ))}
+                            </ListGroup>
+                          </Card.Body>
+                        </Card>
+                      ))}
+                      <Button variant="success" onClick={handleLoad} className="w-100">
+                        Load This Changeset
+                      </Button>
+                    </>
+                  ) : (
+                    <Alert variant="secondary">Select a changeset to preview</Alert>
+                  )}
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
+    </Container>
   );
 }
 

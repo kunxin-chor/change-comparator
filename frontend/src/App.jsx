@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Route, Link, useLocation } from 'wouter'
+import { Container, Nav, Navbar, Button } from 'react-bootstrap'
 import CodeDiffViewer from './components/CodeDiffViewer'
 import FileSelector from './components/FileSelector'
 import ViewModeToggle from './components/ViewModeToggle'
@@ -7,12 +9,32 @@ import ControlBar from './components/ControlBar'
 import ManualChangesetInput from './components/ManualChangesetInput'
 import SavedChangesetsPanel from './components/SavedChangesetsPanel'
 import GitHubPanel from './components/GitHubPanel'
+import CommentEditor from './components/CommentEditor'
+import { 
+  loadChangesetsFromUrls, 
+  loadChangesetsFromSaved, 
+  getAllFilesFromChangesets,
+  getFileFromChangeset 
+} from './services/changesetService'
 import './App.css'
 
 function App() {
-  const [mode, setMode] = useState('demo');
+  // Routing
+  const [location] = useLocation();
+  
+  // State management
   const [manualChangesets, setManualChangesets] = useState([]);
   const [loadedChangesets, setLoadedChangesets] = useState([]);
+  const [selectedFileId, setSelectedFileId] = useState('/index.html');
+  const [viewMode, setViewMode] = useState('hybrid');
+  const [timelineIndex, setTimelineIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
+  
+  // Comment editor state
+  const [showCommentEditor, setShowCommentEditor] = useState(false);
+  const [editingComment, setEditingComment] = useState(null);
+  
+  // Demo data
   const changesets = [
     {
       version: 1,
@@ -165,57 +187,27 @@ function App() {
     }
   ];
 
-  const [selectedFileId, setSelectedFileId] = useState('/index.html');
-  const [viewMode, setViewMode] = useState('hybrid');
-  const [timelineIndex, setTimelineIndex] = useState(0);
-  const [githubChangesets, setGithubChangesets] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // Computed values
+  const getActiveChangesets = () => {
+    if (location === '/manual') return manualChangesets;
+    if (location === '/saved' || location === '/github') return loadedChangesets;
+    return changesets;
+  };
+  
+  const activeChangesets = getActiveChangesets();
+  const allFiles = getAllFilesFromChangesets(activeChangesets, timelineIndex);
+  const file1 = getFileFromChangeset(activeChangesets, timelineIndex, selectedFileId);
+  const file2 = getFileFromChangeset(activeChangesets, timelineIndex + 1, selectedFileId);
+  const showDiffViewer = (location === '/' || location === '/demo') || 
+                          (location === '/manual' && manualChangesets.length > 0) ||
+                          ((location === '/saved' || location === '/github') && loadedChangesets.length > 0);
 
-  const activeChangesets = mode === 'manual' ? manualChangesets : 
-                          mode === 'saved' || mode === 'github' ? loadedChangesets : 
-                          changesets;
-
+  // Event handlers
   const handleLoadManualChangesets = async (inputChangesets) => {
-    console.log('Loading manual changesets:', inputChangesets);
     setLoading(true);
-    
     try {
-      const loadedChangesets = await Promise.all(
-        inputChangesets.map(async (changeset, index) => {
-          const files = await Promise.all(
-            changeset.files.map(async (file) => {
-              try {
-                const response = await fetch(file.url);
-                if (!response.ok) {
-                  throw new Error(`Failed to fetch ${file.path}: ${response.statusText}`);
-                }
-                const content = await response.text();
-                const language = getLanguageFromPath(file.path);
-                
-                return {
-                  id: file.path,
-                  language: language,
-                  content: content,
-                  comments: {}
-                };
-              } catch (error) {
-                console.error(`Error fetching ${file.path}:`, error);
-                throw error;
-              }
-            })
-          );
-          
-          return {
-            version: index + 1,
-            name: changeset.name || `Version ${index + 1}`,
-            files: files
-          };
-        })
-      );
-      
-      console.log('Loaded changesets:', loadedChangesets);
+      const loadedChangesets = await loadChangesetsFromUrls(inputChangesets);
       setManualChangesets(loadedChangesets);
-      setMode('manual');
       setTimelineIndex(0);
       
       if (loadedChangesets[0]?.files?.length > 0) {
@@ -229,76 +221,11 @@ function App() {
     }
   };
 
-  const getLanguageFromPath = (path) => {
-    const ext = path.split('.').pop().toLowerCase();
-    const languageMap = {
-      js: 'javascript',
-      jsx: 'javascript',
-      ts: 'typescript',
-      tsx: 'typescript',
-      py: 'python',
-      java: 'java',
-      cpp: 'cpp',
-      c: 'c',
-      cs: 'csharp',
-      go: 'go',
-      rs: 'rust',
-      rb: 'ruby',
-      php: 'php',
-      html: 'html',
-      css: 'css',
-      scss: 'scss',
-      json: 'json',
-      md: 'markdown',
-      yml: 'yaml',
-      yaml: 'yaml',
-      xml: 'xml',
-      sh: 'bash'
-    };
-    return languageMap[ext] || 'text';
-  };
-
   const handleLoadSavedChangeset = async (changeset) => {
-    console.log('Loading saved changeset:', changeset);
     setLoading(true);
-    
     try {
-      // Fetch content from URLs
-      const loadedChangesets = await Promise.all(
-        changeset.map(async (cs) => {
-          const files = await Promise.all(
-            cs.files.map(async (file) => {
-              try {
-                const response = await fetch(file.url);
-                if (!response.ok) {
-                  throw new Error(`Failed to fetch ${file.path}: ${response.statusText}`);
-                }
-                const content = await response.text();
-                const language = getLanguageFromPath(file.path);
-                
-                return {
-                  id: file.path,
-                  language: language,
-                  content: content,
-                  comments: {}
-                };
-              } catch (error) {
-                console.error(`Error fetching ${file.path}:`, error);
-                throw error;
-              }
-            })
-          );
-          
-          return {
-            ...cs,
-            files: files
-          };
-        })
-      );
-      
-      console.log('Loaded changesets:', loadedChangesets);
+      const loadedChangesets = await loadChangesetsFromSaved(changeset);
       setLoadedChangesets(loadedChangesets);
-      setMode('saved');
       setTimelineIndex(0);
       
       if (loadedChangesets[0]?.files?.length > 0) {
@@ -313,46 +240,10 @@ function App() {
   };
 
   const handleLoadGitHubChangesets = async (changesets, saveKey) => {
-    console.log('Loading GitHub changesets:', changesets);
     setLoading(true);
-    
     try {
-      // Fetch content from raw GitHub URLs
-      const loadedChangesets = await Promise.all(
-        changesets.map(async (cs) => {
-          const files = await Promise.all(
-            cs.files.map(async (file) => {
-              try {
-                const response = await fetch(file.url);
-                if (!response.ok) {
-                  throw new Error(`Failed to fetch ${file.path}: ${response.statusText}`);
-                }
-                const content = await response.text();
-                const language = getLanguageFromPath(file.path);
-                
-                return {
-                  id: file.path,
-                  language: language,
-                  content: content,
-                  comments: {}
-                };
-              } catch (error) {
-                console.error(`Error fetching ${file.path}:`, error);
-                throw error;
-              }
-            })
-          );
-          
-          return {
-            ...cs,
-            files: files
-          };
-        })
-      );
-      
-      console.log('Loaded GitHub changesets:', loadedChangesets);
+      const loadedChangesets = await loadChangesetsFromSaved(changesets);
       setLoadedChangesets(loadedChangesets);
-      setMode('github');
       setTimelineIndex(0);
       
       if (loadedChangesets[0]?.files?.length > 0) {
@@ -366,97 +257,176 @@ function App() {
     }
   };
 
-  // Get all files from both changesets (union)
-  const getAllFiles = () => {
-    if (!activeChangesets[timelineIndex] || !activeChangesets[timelineIndex + 1]) {
-      return [];
-    }
-    
-    const files1 = activeChangesets[timelineIndex].files;
-    const files2 = activeChangesets[timelineIndex + 1].files;
-    
-    // Create a map of all unique file IDs
-    const fileMap = new Map();
-    
-    files1.forEach(f => fileMap.set(f.id, f));
-    files2.forEach(f => {
-      if (!fileMap.has(f.id)) {
-        fileMap.set(f.id, f);
-      }
+  const handleAddComment = (lineNumber, fileName, version, fileKey) => {
+    setEditingComment({
+      lineNumber,
+      fileName,
+      version,
+      fileKey,
+      existingComment: null
     });
-    
-    return Array.from(fileMap.values());
+    setShowCommentEditor(true);
   };
 
-  const allFiles = getAllFiles();
-  
-  // Get file from changeset 1, or create empty placeholder if it doesn't exist
-  const file1 = activeChangesets[timelineIndex]?.files.find(f => f.id === selectedFileId) || 
-    (selectedFileId ? { id: selectedFileId, language: 'text', content: '', comments: {} } : null);
-  
-  // Get file from changeset 2, or create empty placeholder if it doesn't exist
-  const file2 = activeChangesets[timelineIndex + 1]?.files.find(f => f.id === selectedFileId) || 
-    (selectedFileId ? { id: selectedFileId, language: 'text', content: '', comments: {} } : null);
+  const handleEditComment = (lineNumber, fileName, version, fileKey, existingComment) => {
+    setEditingComment({
+      lineNumber,
+      fileName,
+      version,
+      fileKey,
+      existingComment
+    });
+    setShowCommentEditor(true);
+  };
 
-  console.log('Render check:', {
-    mode,
-    activeChangesetsLength: activeChangesets.length,
-    timelineIndex,
-    allFilesCount: allFiles.length,
-    file1: file1?.id,
-    file1HasContent: !!file1?.content,
-    file2: file2?.id,
-    file2HasContent: !!file2?.content,
-    selectedFileId
-  });
+  const handleSaveComment = (comment) => {
+    if (!editingComment) return;
 
-  const showDiffViewer = (mode === 'demo') || 
-                          (mode === 'manual' && manualChangesets.length > 0) ||
-                          ((mode === 'saved' || mode === 'github') && loadedChangesets.length > 0);
+    const { lineNumber, fileKey } = editingComment;
+    
+    // Determine which changeset and file to update
+    const targetChangesets = location === '/manual' ? manualChangesets : loadedChangesets;
+    const setTargetChangesets = location === '/manual' ? setManualChangesets : setLoadedChangesets;
+    
+    const changesetIndex = fileKey === 'file1' ? timelineIndex : timelineIndex + 1;
+    
+    const updatedChangesets = [...targetChangesets];
+    const fileIndex = updatedChangesets[changesetIndex].files.findIndex(f => f.id === selectedFileId);
+    
+    if (fileIndex !== -1) {
+      const updatedFile = { ...updatedChangesets[changesetIndex].files[fileIndex] };
+      updatedFile.comments = { ...updatedFile.comments, [lineNumber]: comment };
+      updatedChangesets[changesetIndex].files[fileIndex] = updatedFile;
+      
+      setTargetChangesets(updatedChangesets);
+    }
+    
+    setShowCommentEditor(false);
+    setEditingComment(null);
+  };
 
+  const handleSaveChangeset = () => {
+    const targetChangesets = location === '/manual' ? manualChangesets : loadedChangesets;
+    
+    if (targetChangesets.length === 0) {
+      alert('No changeset to save');
+      return;
+    }
+
+    const key = prompt('Enter a key name to save this changeset (with comments):');
+    if (!key || !key.trim()) {
+      return;
+    }
+
+    try {
+      // Save the complete changeset structure with content and comments
+      const storageChangesets = targetChangesets.map(cs => ({
+        version: cs.version,
+        name: cs.name,
+        sha: cs.sha,
+        shortSha: cs.shortSha,
+        author: cs.author,
+        date: cs.date,
+        files: cs.files.map(file => ({
+          path: file.id,
+          url: file.url || `#${file.id}`,
+          content: file.content, // Save the actual content
+          language: file.language,
+          comments: file.comments || {}
+        }))
+      }));
+
+      localStorage.setItem(`changeset_${key}`, JSON.stringify(storageChangesets));
+      alert(`Saved successfully as "${key}" with all comments!`);
+    } catch (error) {
+      alert('Error saving: ' + error.message);
+    }
+  };
+
+  const handleExportComments = () => {
+    const targetChangesets = location === '/manual' ? manualChangesets : loadedChangesets;
+    
+    const allComments = [];
+    targetChangesets.forEach((changeset) => {
+      changeset.files.forEach((file) => {
+        if (file.comments && Object.keys(file.comments).length > 0) {
+          Object.entries(file.comments).forEach(([lineNum, comment]) => {
+            allComments.push({
+              version: changeset.version,
+              versionName: changeset.name,
+              file: file.id,
+              line: lineNum,
+              comment: comment.text
+            });
+          });
+        }
+      });
+    });
+    
+    const dataStr = JSON.stringify(allComments, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'comments.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Debug logging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('App state:', {
+      location,
+      changesets: activeChangesets.length,
+      timeline: timelineIndex,
+      files: allFiles.length,
+      selected: selectedFileId
+    });
+  }
+
+  // Render
   return (
     <div className="app">
-      <header className="app-header">
-        <h1>Code Diff Comment Tool</h1>
-        <div className="mode-toggle">
-          <button 
-            className={`mode-btn ${mode === 'demo' ? 'active' : ''}`}
-            onClick={() => setMode('demo')}
-          >
-            Demo
-          </button>
-          <button 
-            className={`mode-btn ${mode === 'manual' ? 'active' : ''}`}
-            onClick={() => setMode('manual')}
-          >
-            Manual
-          </button>
-          <button 
-            className={`mode-btn ${mode === 'github' ? 'active' : ''}`}
-            onClick={() => setMode('github')}
-          >
-            GitHub
-          </button>
-          <button 
-            className={`mode-btn ${mode === 'saved' ? 'active' : ''}`}
-            onClick={() => setMode('saved')}
-          >
-            Saved
-          </button>
-        </div>
-      </header>
+      <Navbar bg="primary" variant="dark" expand="lg" className="mb-3">
+        <Container fluid>
+          <Navbar.Brand>Code Diff Comment Tool</Navbar.Brand>
+          <Navbar.Toggle aria-controls="basic-navbar-nav" />
+          <Navbar.Collapse id="basic-navbar-nav">
+            <Nav className="me-auto">
+              <Nav.Link as={Link} href="/" active={location === '/' || location === '/demo'}>
+                Demo
+              </Nav.Link>
+              <Nav.Link as={Link} href="/manual" active={location === '/manual'}>
+                Manual
+              </Nav.Link>
+              <Nav.Link as={Link} href="/github" active={location === '/github'}>
+                GitHub
+              </Nav.Link>
+              <Nav.Link as={Link} href="/saved" active={location === '/saved'}>
+                Saved
+              </Nav.Link>
+            </Nav>
+          </Navbar.Collapse>
+        </Container>
+      </Navbar>
 
-      {mode === 'manual' && manualChangesets.length === 0 && (
-        <ManualChangesetInput onLoadChangesets={handleLoadManualChangesets} />
-      )}
+      <Route path="/manual">
+        {manualChangesets.length === 0 && (
+          <ManualChangesetInput onLoadChangesets={handleLoadManualChangesets} />
+        )}
+      </Route>
 
-      {mode === 'github' && loadedChangesets.length === 0 && (
-        <GitHubPanel onLoadChangesets={handleLoadGitHubChangesets} />
-      )}
+      <Route path="/github">
+        {loadedChangesets.length === 0 && (
+          <GitHubPanel onLoadChangesets={handleLoadGitHubChangesets} />
+        )}
+      </Route>
 
-      {mode === 'saved' && loadedChangesets.length === 0 && (
-        <SavedChangesetsPanel onLoadChangeset={handleLoadSavedChangeset} />
-      )}
+      <Route path="/saved">
+        {loadedChangesets.length === 0 && (
+          <SavedChangesetsPanel onLoadChangeset={handleLoadSavedChangeset} />
+        )}
+      </Route>
 
       {loading && (
         <div className="loading-overlay">
@@ -468,49 +438,70 @@ function App() {
         <>
           <Timeline 
             changesets={activeChangesets}
-            selectedIndex={timelineIndex}
+            currentIndex={timelineIndex}
             onIndexChange={setTimelineIndex}
           />
           
-          {allFiles.length > 0 ? (
-            <>
+          <Container fluid className="mb-3">
+            <div className="d-flex justify-content-between align-items-center">
               <ControlBar>
                 <FileSelector 
                   files={allFiles}
                   selectedFileId={selectedFileId}
-                  onSelectFile={setSelectedFileId}
+                  onFileChange={setSelectedFileId}
                 />
-                
                 <ViewModeToggle 
                   viewMode={viewMode}
                   onViewModeChange={setViewMode}
                 />
               </ControlBar>
               
-              {file1 && file2 ? (
-                <CodeDiffViewer 
-                  file1={file1} 
-                  file2={file2}
-                  fileName={file1.id}
-                  version1={activeChangesets[timelineIndex].version}
-                  version2={activeChangesets[timelineIndex + 1].version}
-                  viewMode={viewMode}
-                />
-              ) : (
-                <div style={{ maxWidth: '1600px', margin: '20px auto', padding: '20px', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '6px' }}>
-                  <strong>No file selected.</strong> Please select a file from the dropdown.
+              {(location === '/manual' || location === '/github' || location === '/saved') && (
+                <div className="d-flex gap-2">
+                  <Button variant="primary" onClick={handleSaveChangeset}>
+                    💾 Save Changeset
+                  </Button>
+                  <Button variant="success" onClick={handleExportComments}>
+                    📥 Export Comments
+                  </Button>
                 </div>
               )}
-            </>
+            </div>
+          </Container>
+
+          {file1 && file2 ? (
+            <CodeDiffViewer 
+              file1={file1} 
+              file2={file2}
+              fileName={selectedFileId}
+              version1={activeChangesets[timelineIndex].version}
+              version2={activeChangesets[timelineIndex + 1].version}
+              viewMode={viewMode}
+              onAddComment={(location === '/manual' || location === '/github' || location === '/saved') ? handleAddComment : null}
+              onEditComment={(location === '/manual' || location === '/github' || location === '/saved') ? handleEditComment : null}
+            />
           ) : (
-            <div style={{ maxWidth: '1600px', margin: '20px auto', padding: '20px', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '6px' }}>
-              <strong>No files in these commits.</strong> The selected commits don't contain any files. Try selecting different commits.
+            <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+              <p>No matching file found in both versions.</p>
             </div>
           )}
         </>
       )}
+
+      <CommentEditor
+        show={showCommentEditor}
+        onHide={() => {
+          setShowCommentEditor(false);
+          setEditingComment(null);
+        }}
+        onSave={handleSaveComment}
+        existingComment={editingComment?.existingComment}
+        lineNumber={editingComment?.lineNumber}
+        fileName={editingComment?.fileName}
+        version={editingComment?.version}
+      />
     </div>
-  )
+  );
 }
 
 export default App

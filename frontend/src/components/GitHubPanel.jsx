@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import './GitHubPanel.css'
+import { Container, Card, Form, Button, Row, Col, Alert, Badge, ListGroup } from 'react-bootstrap'
 
 function GitHubPanel({ onLoadChangesets }) {
   const [repoUrl, setRepoUrl] = useState('');
@@ -130,7 +130,10 @@ function GitHubPanel({ onLoadChangesets }) {
           })
           .map(item => ({
             path: `/${item.path}`,
-            url: `https://raw.githubusercontent.com/${parsed.owner}/${parsed.repo}/${commit.sha}/${item.path}`
+            url: `https://raw.githubusercontent.com/${parsed.owner}/${parsed.repo}/${commit.sha}/${item.path}`,
+            content: '', // Will be fetched when loaded
+            language: '', // Will be determined when loaded
+            comments: {} // Empty initially, can be added later
           }));
 
         changesets.push({
@@ -159,121 +162,135 @@ function GitHubPanel({ onLoadChangesets }) {
   };
 
   return (
-    <div className="github-panel">
-      <h2>GitHub Repository</h2>
-      <p className="instruction">Load commits from GitHub and save with raw file URLs.</p>
+    <Container className="my-4">
+      <Card>
+        <Card.Header>
+          <h4 className="mb-0">GitHub Repository</h4>
+        </Card.Header>
+        <Card.Body>
+          <p className="text-muted">Load commits from GitHub and save with raw file URLs.</p>
 
-      <div className="github-form">
-        <div className="form-row">
-          <div className="form-group">
-            <label>Repository URL:</label>
-            <input
-              type="text"
-              className="input-field"
-              placeholder="https://github.com/owner/repo"
-              value={repoUrl}
-              onChange={(e) => setRepoUrl(e.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label>Branch:</label>
-            <input
-              type="text"
-              className="input-field"
-              placeholder="main"
-              value={branch}
-              onChange={(e) => setBranch(e.target.value)}
-            />
-          </div>
-        </div>
+          <Form>
+            <Row className="mb-3">
+              <Col md={8}>
+                <Form.Group>
+                  <Form.Label>Repository URL:</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="https://github.com/owner/repo"
+                    value={repoUrl}
+                    onChange={(e) => setRepoUrl(e.target.value)}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group>
+                  <Form.Label>Branch:</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="main"
+                    value={branch}
+                    onChange={(e) => setBranch(e.target.value)}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label>GitHub Token (optional):</label>
-            <input
-              type="password"
-              className="input-field"
-              placeholder="ghp_xxxxxxxxxxxx"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label>Max Requests:</label>
-            <input
-              type="number"
-              className="input-field"
-              value={maxRequests}
-              onChange={(e) => setMaxRequests(parseInt(e.target.value))}
-              min="1"
-              max="1000"
-            />
-          </div>
-        </div>
+            <Row className="mb-3">
+              <Col md={8}>
+                <Form.Group>
+                  <Form.Label>GitHub Token (optional):</Form.Label>
+                  <Form.Control
+                    type="password"
+                    placeholder="ghp_xxxxxxxxxxxx"
+                    value={token}
+                    onChange={(e) => setToken(e.target.value)}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group>
+                  <Form.Label>Max Requests:</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={maxRequests}
+                    onChange={(e) => setMaxRequests(parseInt(e.target.value))}
+                    min="1"
+                    max="1000"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
 
-        <div className="request-counter">
-          Requests used: {requestCount} / {maxRequests}
-        </div>
+            <Alert variant="info" className="d-flex justify-content-between align-items-center">
+              <span>Requests used: <Badge bg="primary">{requestCount} / {maxRequests}</Badge></span>
+            </Alert>
 
-        <button className="load-repo-btn" onClick={handleLoadRepo} disabled={loading}>
-          {loading ? 'Loading...' : 'Load Repository'}
-        </button>
-      </div>
+            <Button variant="primary" onClick={handleLoadRepo} disabled={loading} className="w-100">
+              {loading ? 'Loading...' : 'Load Repository'}
+            </Button>
+          </Form>
 
-      {commits.length > 0 && (
-        <div className="commits-section">
-          <h3>Select Commits ({selectedCommits.length} selected)</h3>
-          <div className="commits-list">
-            {commits.map((commit, index) => (
-              <div
-                key={commit.sha}
-                className={`commit-item ${selectedCommits.includes(index) ? 'selected' : ''}`}
-                onClick={() => toggleCommit(index)}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedCommits.includes(index)}
-                  onChange={() => {}}
-                />
-                <div className="commit-info">
-                  <div className="commit-message">{commit.message}</div>
-                  <div className="commit-meta">
-                    <span className="commit-sha">{commit.shortSha}</span>
-                    <span className="commit-author">{commit.author}</span>
-                    <span className="commit-date">
-                      {new Date(commit.date).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          {commits.length > 0 && (
+            <div className="mt-4">
+              <h5>Select Commits <Badge bg="secondary">{selectedCommits.length} selected</Badge></h5>
+              <ListGroup style={{ maxHeight: '400px', overflowY: 'auto' }} className="mb-3">
+                {commits.map((commit, index) => (
+                  <ListGroup.Item
+                    key={commit.sha}
+                    active={selectedCommits.includes(index)}
+                    onClick={() => toggleCommit(index)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <Form.Check
+                      type="checkbox"
+                      checked={selectedCommits.includes(index)}
+                      onChange={() => {}}
+                      label={
+                        <div>
+                          <div className="fw-bold">{commit.message}</div>
+                          <div className="small text-muted">
+                            <Badge bg="secondary" className="me-2">{commit.shortSha}</Badge>
+                            {commit.author} · {new Date(commit.date).toLocaleDateString()}
+                          </div>
+                        </div>
+                      }
+                    />
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
 
-          <div className="save-section">
-            <input
-              type="text"
-              className="input-field"
-              placeholder="Enter key name to save (e.g., assignment-1)"
-              value={saveKey}
-              onChange={(e) => setSaveKey(e.target.value)}
-            />
-            <button
-              className="load-commits-btn"
-              onClick={handleLoadCommits}
-              disabled={selectedCommits.length < 2 || loading || !saveKey}
-            >
-              {loading ? 'Loading...' : 'Load & Save Selected Commits'}
-            </button>
-          </div>
-        </div>
-      )}
+              <Row>
+                <Col md={8}>
+                  <Form.Control
+                    type="text"
+                    placeholder="Enter key name to save (e.g., assignment-1)"
+                    value={saveKey}
+                    onChange={(e) => setSaveKey(e.target.value)}
+                  />
+                </Col>
+                <Col md={4}>
+                  <Button
+                    variant="success"
+                    onClick={handleLoadCommits}
+                    disabled={selectedCommits.length < 2 || loading || !saveKey}
+                    className="w-100"
+                  >
+                    {loading ? 'Loading...' : 'Load & Save'}
+                  </Button>
+                </Col>
+              </Row>
+            </div>
+          )}
 
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
-    </div>
+          {error && (
+            <Alert variant="danger" className="mt-3">
+              {error}
+            </Alert>
+          )}
+        </Card.Body>
+      </Card>
+    </Container>
   );
 }
 
