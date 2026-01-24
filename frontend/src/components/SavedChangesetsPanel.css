@@ -1,0 +1,177 @@
+.saved-changesets-panel {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 20px;
+  background: white;
+  border: 2px solid #e1e4e8;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.saved-changesets-panel h2 {
+  margin: 0 0 10px 0;
+  font-size: 24px;
+  color: #24292e;
+}
+
+.instruction {
+  margin: 0 0 20px 0;
+  color: #586069;
+  font-size: 14px;
+}
+
+.saved-content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 20px;
+  min-height: 400px;
+}
+
+.saved-list {
+  border: 2px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 15px;
+  background: #f6f8fa;
+}
+
+.saved-list h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  color: #24292e;
+}
+
+.keys-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.key-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: white;
+  border: 2px solid #e1e4e8;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.key-item:hover {
+  border-color: #0366d6;
+  background: #f1f8ff;
+}
+
+.key-item.selected {
+  border-color: #0366d6;
+  background: #0366d6;
+  color: white;
+}
+
+.key-name {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+}
+
+.delete-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: #d73a49;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.delete-btn:hover {
+  background: #cb2431;
+}
+
+.key-item.selected .delete-btn {
+  background: white;
+  color: #d73a49;
+}
+
+.preview-panel {
+  border: 2px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 15px;
+  background: #f6f8fa;
+}
+
+.preview-panel h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  color: #24292e;
+}
+
+.preview-content {
+  background: white;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #e1e4e8;
+}
+
+.version-preview {
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e1e4e8;
+}
+
+.version-preview:last-of-type {
+  border-bottom: none;
+}
+
+.version-preview h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #24292e;
+}
+
+.file-count {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: #586069;
+}
+
+.file-list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  color: #586069;
+}
+
+.file-list li {
+  margin-bottom: 4px;
+}
+
+.empty-message {
+  color: #586069;
+  font-size: 14px;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.load-btn {
+  width: 100%;
+  margin-top: 15px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.load-btn:hover {
+  background: #22863a;
+}

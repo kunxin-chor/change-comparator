@@ -22,3 +22,60 @@
   font-size: 16px;
   opacity: 0.9;
 }
+
+.mode-toggle {
+  display: flex;
+  gap: 0;
+  margin-top: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.mode-btn {
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-btn:last-child {
+  border-right: none;
+}
+
+.mode-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mode-btn.active {
+  background: white;
+  color: #667eea;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.loading-spinner {
+  background: white;
+  padding: 30px 50px;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #24292e;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}

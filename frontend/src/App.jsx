@@ -4,9 +4,15 @@ import FileSelector from './components/FileSelector'
 import ViewModeToggle from './components/ViewModeToggle'
 import Timeline from './components/Timeline'
 import ControlBar from './components/ControlBar'
+import ManualChangesetInput from './components/ManualChangesetInput'
+import SavedChangesetsPanel from './components/SavedChangesetsPanel'
+import GitHubPanel from './components/GitHubPanel'
 import './App.css'
 
 function App() {
+  const [mode, setMode] = useState('demo');
+  const [manualChangesets, setManualChangesets] = useState([]);
+  const [loadedChangesets, setLoadedChangesets] = useState([]);
   const changesets = [
     {
       version: 1,
@@ -162,44 +168,347 @@ function App() {
   const [selectedFileId, setSelectedFileId] = useState('/index.html');
   const [viewMode, setViewMode] = useState('hybrid');
   const [timelineIndex, setTimelineIndex] = useState(0);
+  const [githubChangesets, setGithubChangesets] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const file1 = changesets[timelineIndex].files.find(f => f.id === selectedFileId);
-  const file2 = changesets[timelineIndex + 1].files.find(f => f.id === selectedFileId);
+  const activeChangesets = mode === 'manual' ? manualChangesets : 
+                          mode === 'saved' || mode === 'github' ? loadedChangesets : 
+                          changesets;
+
+  const handleLoadManualChangesets = async (inputChangesets) => {
+    console.log('Loading manual changesets:', inputChangesets);
+    setLoading(true);
+    
+    try {
+      const loadedChangesets = await Promise.all(
+        inputChangesets.map(async (changeset, index) => {
+          const files = await Promise.all(
+            changeset.files.map(async (file) => {
+              try {
+                const response = await fetch(file.url);
+                if (!response.ok) {
+                  throw new Error(`Failed to fetch ${file.path}: ${response.statusText}`);
+                }
+                const content = await response.text();
+                const language = getLanguageFromPath(file.path);
+                
+                return {
+                  id: file.path,
+                  language: language,
+                  content: content,
+                  comments: {}
+                };
+              } catch (error) {
+                console.error(`Error fetching ${file.path}:`, error);
+                throw error;
+              }
+            })
+          );
+          
+          return {
+            version: index + 1,
+            name: changeset.name || `Version ${index + 1}`,
+            files: files
+          };
+        })
+      );
+      
+      console.log('Loaded changesets:', loadedChangesets);
+      setManualChangesets(loadedChangesets);
+      setMode('manual');
+      setTimelineIndex(0);
+      
+      if (loadedChangesets[0]?.files?.length > 0) {
+        setSelectedFileId(loadedChangesets[0].files[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading changesets:', error);
+      alert('Error loading changesets: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getLanguageFromPath = (path) => {
+    const ext = path.split('.').pop().toLowerCase();
+    const languageMap = {
+      js: 'javascript',
+      jsx: 'javascript',
+      ts: 'typescript',
+      tsx: 'typescript',
+      py: 'python',
+      java: 'java',
+      cpp: 'cpp',
+      c: 'c',
+      cs: 'csharp',
+      go: 'go',
+      rs: 'rust',
+      rb: 'ruby',
+      php: 'php',
+      html: 'html',
+      css: 'css',
+      scss: 'scss',
+      json: 'json',
+      md: 'markdown',
+      yml: 'yaml',
+      yaml: 'yaml',
+      xml: 'xml',
+      sh: 'bash'
+    };
+    return languageMap[ext] || 'text';
+  };
+
+  const handleLoadSavedChangeset = async (changeset) => {
+    console.log('Loading saved changeset:', changeset);
+    setLoading(true);
+    
+    try {
+      // Fetch content from URLs
+      const loadedChangesets = await Promise.all(
+        changeset.map(async (cs) => {
+          const files = await Promise.all(
+            cs.files.map(async (file) => {
+              try {
+                const response = await fetch(file.url);
+                if (!response.ok) {
+                  throw new Error(`Failed to fetch ${file.path}: ${response.statusText}`);
+                }
+                const content = await response.text();
+                const language = getLanguageFromPath(file.path);
+                
+                return {
+                  id: file.path,
+                  language: language,
+                  content: content,
+                  comments: {}
+                };
+              } catch (error) {
+                console.error(`Error fetching ${file.path}:`, error);
+                throw error;
+              }
+            })
+          );
+          
+          return {
+            ...cs,
+            files: files
+          };
+        })
+      );
+      
+      console.log('Loaded changesets:', loadedChangesets);
+      setLoadedChangesets(loadedChangesets);
+      setMode('saved');
+      setTimelineIndex(0);
+      
+      if (loadedChangesets[0]?.files?.length > 0) {
+        setSelectedFileId(loadedChangesets[0].files[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading changeset:', error);
+      alert('Error loading changeset: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoadGitHubChangesets = async (changesets, saveKey) => {
+    console.log('Loading GitHub changesets:', changesets);
+    setLoading(true);
+    
+    try {
+      // Fetch content from raw GitHub URLs
+      const loadedChangesets = await Promise.all(
+        changesets.map(async (cs) => {
+          const files = await Promise.all(
+            cs.files.map(async (file) => {
+              try {
+                const response = await fetch(file.url);
+                if (!response.ok) {
+                  throw new Error(`Failed to fetch ${file.path}: ${response.statusText}`);
+                }
+                const content = await response.text();
+                const language = getLanguageFromPath(file.path);
+                
+                return {
+                  id: file.path,
+                  language: language,
+                  content: content,
+                  comments: {}
+                };
+              } catch (error) {
+                console.error(`Error fetching ${file.path}:`, error);
+                throw error;
+              }
+            })
+          );
+          
+          return {
+            ...cs,
+            files: files
+          };
+        })
+      );
+      
+      console.log('Loaded GitHub changesets:', loadedChangesets);
+      setLoadedChangesets(loadedChangesets);
+      setMode('github');
+      setTimelineIndex(0);
+      
+      if (loadedChangesets[0]?.files?.length > 0) {
+        setSelectedFileId(loadedChangesets[0].files[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading GitHub changesets:', error);
+      alert('Error loading GitHub changesets: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get all files from both changesets (union)
+  const getAllFiles = () => {
+    if (!activeChangesets[timelineIndex] || !activeChangesets[timelineIndex + 1]) {
+      return [];
+    }
+    
+    const files1 = activeChangesets[timelineIndex].files;
+    const files2 = activeChangesets[timelineIndex + 1].files;
+    
+    // Create a map of all unique file IDs
+    const fileMap = new Map();
+    
+    files1.forEach(f => fileMap.set(f.id, f));
+    files2.forEach(f => {
+      if (!fileMap.has(f.id)) {
+        fileMap.set(f.id, f);
+      }
+    });
+    
+    return Array.from(fileMap.values());
+  };
+
+  const allFiles = getAllFiles();
+  
+  // Get file from changeset 1, or create empty placeholder if it doesn't exist
+  const file1 = activeChangesets[timelineIndex]?.files.find(f => f.id === selectedFileId) || 
+    (selectedFileId ? { id: selectedFileId, language: 'text', content: '', comments: {} } : null);
+  
+  // Get file from changeset 2, or create empty placeholder if it doesn't exist
+  const file2 = activeChangesets[timelineIndex + 1]?.files.find(f => f.id === selectedFileId) || 
+    (selectedFileId ? { id: selectedFileId, language: 'text', content: '', comments: {} } : null);
+
+  console.log('Render check:', {
+    mode,
+    activeChangesetsLength: activeChangesets.length,
+    timelineIndex,
+    allFilesCount: allFiles.length,
+    file1: file1?.id,
+    file1HasContent: !!file1?.content,
+    file2: file2?.id,
+    file2HasContent: !!file2?.content,
+    selectedFileId
+  });
+
+  const showDiffViewer = (mode === 'demo') || 
+                          (mode === 'manual' && manualChangesets.length > 0) ||
+                          ((mode === 'saved' || mode === 'github') && loadedChangesets.length > 0);
 
   return (
     <div className="app">
       <header className="app-header">
         <h1>Code Diff Comment Tool</h1>
-        <p>Feature: Add greeting page</p>
+        <div className="mode-toggle">
+          <button 
+            className={`mode-btn ${mode === 'demo' ? 'active' : ''}`}
+            onClick={() => setMode('demo')}
+          >
+            Demo
+          </button>
+          <button 
+            className={`mode-btn ${mode === 'manual' ? 'active' : ''}`}
+            onClick={() => setMode('manual')}
+          >
+            Manual
+          </button>
+          <button 
+            className={`mode-btn ${mode === 'github' ? 'active' : ''}`}
+            onClick={() => setMode('github')}
+          >
+            GitHub
+          </button>
+          <button 
+            className={`mode-btn ${mode === 'saved' ? 'active' : ''}`}
+            onClick={() => setMode('saved')}
+          >
+            Saved
+          </button>
+        </div>
       </header>
-      
-      <Timeline 
-        changesets={changesets}
-        selectedIndex={timelineIndex}
-        onIndexChange={setTimelineIndex}
-      />
-      
-      <ControlBar>
-        <FileSelector 
-          files={changesets[timelineIndex].files}
-          selectedFileId={selectedFileId}
-          onSelectFile={setSelectedFileId}
-        />
-        
-        <ViewModeToggle 
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-        />
-      </ControlBar>
-      
-      <CodeDiffViewer 
-        file1={file1} 
-        file2={file2}
-        fileName={file1.id}
-        version1={changesets[timelineIndex].version}
-        version2={changesets[timelineIndex + 1].version}
-        viewMode={viewMode}
-      />
+
+      {mode === 'manual' && manualChangesets.length === 0 && (
+        <ManualChangesetInput onLoadChangesets={handleLoadManualChangesets} />
+      )}
+
+      {mode === 'github' && loadedChangesets.length === 0 && (
+        <GitHubPanel onLoadChangesets={handleLoadGitHubChangesets} />
+      )}
+
+      {mode === 'saved' && loadedChangesets.length === 0 && (
+        <SavedChangesetsPanel onLoadChangeset={handleLoadSavedChangeset} />
+      )}
+
+      {loading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner">Loading commits...</div>
+        </div>
+      )}
+
+      {showDiffViewer && activeChangesets.length > 1 && (
+        <>
+          <Timeline 
+            changesets={activeChangesets}
+            selectedIndex={timelineIndex}
+            onIndexChange={setTimelineIndex}
+          />
+          
+          {allFiles.length > 0 ? (
+            <>
+              <ControlBar>
+                <FileSelector 
+                  files={allFiles}
+                  selectedFileId={selectedFileId}
+                  onSelectFile={setSelectedFileId}
+                />
+                
+                <ViewModeToggle 
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                />
+              </ControlBar>
+              
+              {file1 && file2 ? (
+                <CodeDiffViewer 
+                  file1={file1} 
+                  file2={file2}
+                  fileName={file1.id}
+                  version1={activeChangesets[timelineIndex].version}
+                  version2={activeChangesets[timelineIndex + 1].version}
+                  viewMode={viewMode}
+                />
+              ) : (
+                <div style={{ maxWidth: '1600px', margin: '20px auto', padding: '20px', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '6px' }}>
+                  <strong>No file selected.</strong> Please select a file from the dropdown.
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ maxWidth: '1600px', margin: '20px auto', padding: '20px', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '6px' }}>
+              <strong>No files in these commits.</strong> The selected commits don't contain any files. Try selecting different commits.
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

@@ -1,0 +1,76 @@
+.github-input {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 20px;
+  background: white;
+  border: 2px solid #e1e4e8;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.github-form {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 250px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #24292e;
+}
+
+.github-input-field {
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 2px solid #e1e4e8;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  transition: border-color 0.2s;
+}
+
+.github-input-field:focus {
+  outline: none;
+  border-color: #0366d6;
+  box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.1);
+}
+
+.load-repo-btn {
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.load-repo-btn:hover:not(:disabled) {
+  background: #22863a;
+}
+
+.load-repo-btn:disabled {
+  background: #94d3a2;
+  cursor: not-allowed;
+}
+
+.error-message {
+  margin-top: 15px;
+  padding: 12px;
+  background: #ffeef0;
+  border: 1px solid #d73a49;
+  border-radius: 6px;
+  color: #d73a49;
+  font-size: 14px;
+}
