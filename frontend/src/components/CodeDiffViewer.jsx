@@ -3,7 +3,7 @@ import * as Diff from 'diff'
 import ReactMarkdown from 'react-markdown'
 import './CodeDiffViewer.css'
 
-function CodeDiffViewer({ file1, file2 }) {
+function CodeDiffViewer({ file1, file2, fileName, version1, version2, viewMode = 'hybrid' }) {
   const [selectedLineComment, setSelectedLineComment] = useState(null);
 
   const diff = Diff.diffLines(file1.content, file2.content);
@@ -25,27 +25,31 @@ function CodeDiffViewer({ file1, file2 }) {
           const currentLineNum = file1LineNum;
           const comment = file1.comments && file1.comments[currentLineNum];
           
-          rows.push({
-            key: `${partIndex}-${lineIndex}-removed`,
-            type: 'removed',
-            lineNum: currentLineNum,
-            line: line,
-            comment: comment,
-            file: file1.name
-          });
+          if (viewMode === 'hybrid' || viewMode === 'previous') {
+            rows.push({
+              key: `${partIndex}-${lineIndex}-removed`,
+              type: 'removed',
+              lineNum: currentLineNum,
+              line: line,
+              comment: comment,
+              file: fileName
+            });
+          }
         } else if (part.added) {
           file2LineNum++;
           const currentLineNum = file2LineNum;
           const comment = file2.comments && file2.comments[currentLineNum];
           
-          rows.push({
-            key: `${partIndex}-${lineIndex}-added`,
-            type: 'added',
-            lineNum: currentLineNum,
-            line: line,
-            comment: comment,
-            file: file2.name
-          });
+          if (viewMode === 'hybrid' || viewMode === 'current') {
+            rows.push({
+              key: `${partIndex}-${lineIndex}-added`,
+              type: 'added',
+              lineNum: currentLineNum,
+              line: line,
+              comment: comment,
+              file: fileName
+            });
+          }
         } else {
           file1LineNum++;
           file2LineNum++;
@@ -58,7 +62,7 @@ function CodeDiffViewer({ file1, file2 }) {
             lineNum: currentLineNum,
             line: line,
             comment: comment,
-            file: file1.name
+            file: fileName
           });
         }
       });
@@ -73,9 +77,12 @@ function CodeDiffViewer({ file1, file2 }) {
     <div className="code-diff-viewer">
       <div className="diff-header">
         <div className="file-names">
-          <span className="file-name old">{file1.name}</span>
-          <span className="separator">→</span>
-          <span className="file-name new">{file2.name}</span>
+          <span className="file-name-display">{fileName}</span>
+          <span className="version-info">
+            <span className="version old">v{version1}</span>
+            <span className="separator">→</span>
+            <span className="version new">v{version2}</span>
+          </span>
         </div>
       </div>
 

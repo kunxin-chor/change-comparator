@@ -18,22 +18,41 @@
 .file-names {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 15px;
   font-size: 16px;
   font-weight: 600;
 }
 
-.file-name.old {
-  color: #d73a49;
+.file-name-display {
+  font-family: 'Courier New', monospace;
+  color: #24292e;
+  font-size: 18px;
 }
 
-.file-name.new {
+.version-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.version.old {
+  color: #d73a49;
+  background: #ffeef0;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.version.new {
   color: #28a745;
+  background: #e6ffed;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 
 .separator {
   color: #666;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .two-column-layout {
