@@ -103,9 +103,12 @@ function ChangesetViewerPage() {
   const pairOptions = useMemo(() => {
     const opts = []
     for (let i = 0; i < changesets.length - 1; i++) {
-      const v1 = changesets[i]?.version ?? i + 1
-      const v2 = changesets[i + 1]?.version ?? i + 2
-      opts.push({ index: i, label: `v${v1} → v${v2}` })
+      const cs1 = changesets[i]
+      const cs2 = changesets[i + 1]
+      const v1 = cs1?.version ?? i + 1
+      const v2 = cs2?.version ?? i + 2
+      const name2 = cs2?.name ? `: ${cs2.name}` : ''
+      opts.push({ index: i, label: `v${v1} → v${v2}${name2}` })
     }
     return opts
   }, [changesets])
