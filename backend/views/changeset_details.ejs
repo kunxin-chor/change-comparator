@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Changeset Details</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; }
+      .nav a { margin-right: 12px; }
+      code { font-family: Consolas, monospace; }
+      .row { margin: 10px 0; }
+      .label { font-weight: 600; display: inline-block; width: 140px; }
+      .card { border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-top: 12px; }
+      .error { background: #ffeef0; border: 1px solid #d73a49; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+      input { width: 520px; max-width: 100%; padding: 8px; }
+    </style>
+  </head>
+  <body>
+    <div class="nav">
+      <a href="/changeset/list">List</a>
+      <a href="/changeset/create">Create</a>
+    </div>
+
+    <h1>Changeset Details</h1>
+
+    <% if (error) { %>
+      <div class="error"><%= error %></div>
+    <% } %>
+
+    <div class="card">
+      <div class="row"><span class="label">Name</span> <%= item.name %></div>
+      <div class="row"><span class="label">Repo URL</span> <code><%= item.repoUrl %></code></div>
+      <div class="row"><span class="label">Branch</span> <%= item.branch %></div>
+      <div class="row"><span class="label">Created</span> <%= item.createdAt ? new Date(item.createdAt).toISOString() : '' %></div>
+      <div class="row"><span class="label">Last synced</span> <%= item.lastSyncedAt ? new Date(item.lastSyncedAt).toISOString() : 'Not synced yet' %></div>
+      <div class="row"><span class="label">Mongo ID</span> <code><%= item._id %></code></div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top: 0;">Sync</h2>
+      <form method="POST" action="/changeset/<%= item._id %>/sync" style="margin: 0;">
+        <div class="row">
+          <span class="label">GitHub token</span>
+          <input type="text" name="token" placeholder="Optional (required for private repos / higher rate limits)" />
+        </div>
+        <div class="row">
+          <button type="submit">Sync now</button>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>

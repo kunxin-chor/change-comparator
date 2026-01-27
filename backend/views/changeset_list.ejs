@@ -30,12 +30,13 @@
           <th>Versions</th>
           <th>Total files</th>
           <th>Mongo ID</th>
+          <th>Details</th>
         </tr>
       </thead>
       <tbody>
         <% if (items.length === 0) { %>
           <tr>
-            <td colspan="7">No changesets yet.</td>
+            <td colspan="8">No changesets yet.</td>
           </tr>
         <% } %>
 
@@ -48,6 +49,7 @@
             <td><%= item.versions %></td>
             <td><%= item.totalFiles %></td>
             <td><code><%= item._id %></code></td>
+            <td><a href="/changeset/details/<%= item._id %>">View</a></td>
           </tr>
         <% }) %>
       </tbody>

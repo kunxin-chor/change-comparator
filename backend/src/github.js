@@ -106,7 +106,69 @@ async function buildChangesetsFromRepo({ repoUrl, branch = 'main', token = '', c
   return changesets;
 }
 
+async function syncChangeset({ repoUrl, branch = 'main', token = '', existingChangesets = [] }) {
+  const parsed = parseRepoUrl(repoUrl);
+  if (!parsed) {
+    throw new Error('Invalid GitHub repo URL');
+  }
+
+  const existingShas = new Set(existingChangesets.map(cs => cs.sha));
+
+  // Fetch all recent commits (e.g., last 50)
+  const commitsUrl = `${GITHUB_API_BASE}/repos/${parsed.owner}/${parsed.repo}/commits?sha=${encodeURIComponent(branch)}&per_page=50`;
+  const commitsData = await fetchJson(commitsUrl, token);
+
+  const allCommits = commitsData
+    .map((c) => ({
+      sha: c.sha,
+      shortSha: c.sha.substring(0, 7),
+      message: c.commit.message,
+      author: c.commit.author?.name || 'unknown',
+      date: c.commit.author?.date || null
+    }))
+    .reverse(); // oldest first
+
+  const newCommits = allCommits.filter(c => !existingShas.has(c.sha));
+
+  if (newCommits.length === 0) {
+    return existingChangesets; // No changes
+  }
+
+  let lastVersion = existingChangesets.length > 0 ? existingChangesets[existingChangesets.length - 1].version : 0;
+
+  for (const commit of newCommits) {
+    const treeUrl = `${GITHUB_API_BASE}/repos/${parsed.owner}/${parsed.repo}/git/trees/${commit.sha}?recursive=1`;
+    const treeData = await fetchJson(treeUrl, token);
+
+    const files = treeData.tree
+      .filter(item => {
+        if (item.type !== 'blob') return false;
+        const isValidSize = typeof item.size === 'number' ? item.size < 1000000 : true;
+        const hasValidExtension = /\.(js|jsx|ts|tsx|py|java|cpp|c|cs|go|rs|rb|php|html|css|scss|json|md|yml|yaml|xml|sh|txt)$/i.test(item.path);
+        return isValidSize && hasValidExtension;
+      })
+      .map(item => ({
+        path: `/${item.path}`,
+        url: `https://raw.githubusercontent.com/${parsed.owner}/${parsed.repo}/${commit.sha}/${item.path}`,
+        comments: {}
+      }));
+
+    existingChangesets.push({
+      version: ++lastVersion,
+      name: commit.message.split('\n')[0],
+      sha: commit.sha,
+      shortSha: commit.shortSha,
+      author: commit.author,
+      date: commit.date,
+      files
+    });
+  }
+
+  return existingChangesets;
+}
+
 module.exports = {
   parseRepoUrl,
-  buildChangesetsFromRepo
+  buildChangesetsFromRepo,
+  syncChangeset
 };
