@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Create Changeset</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; }
+      .row { margin-bottom: 12px; }
+      label { display: block; font-weight: 600; margin-bottom: 4px; }
+      input { width: 520px; max-width: 100%; padding: 8px; }
+      .actions { margin-top: 16px; }
+      .error { background: #ffeef0; border: 1px solid #d73a49; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+      .ok { background: #e6ffed; border: 1px solid #28a745; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+      .nav a { margin-right: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="nav">
+      <a href="/changeset/list">List</a>
+      <a href="/changeset/create">Create</a>
+    </div>
+
+    <h1>Create Changeset</h1>
+
+    <% if (error) { %>
+      <div class="error"><%= error %></div>
+    <% } %>
+
+    <% if (result) { %>
+      <div class="ok">
+        Saved. ID: <code><%= result.insertedId %></code><br />
+        Versions: <%= result.versions %><br />
+        Total files: <%= result.totalFiles %>
+      </div>
+    <% } %>
+
+    <form method="POST" action="/changeset/create">
+      <div class="row">
+        <label for="name">Changeset name</label>
+        <input id="name" name="name" value="<%= defaults.name %>" placeholder="e.g. Assignment 1 - Alice" />
+      </div>
+
+      <div class="row">
+        <label for="repoUrl">GitHub repo URL</label>
+        <input id="repoUrl" name="repoUrl" value="<%= defaults.repoUrl %>" placeholder="https://github.com/owner/repo" />
+      </div>
+
+      <div class="row">
+        <label for="branch">Branch</label>
+        <input id="branch" name="branch" value="<%= defaults.branch %>" />
+      </div>
+
+      <div class="row">
+        <label for="token">GitHub token (optional)</label>
+        <input id="token" name="token" value="<%= defaults.token %>" placeholder="ghp_..." />
+      </div>
+
+      <div class="row">
+        <label for="commitCount">Commit count (2-20)</label>
+        <input id="commitCount" name="commitCount" value="<%= defaults.commitCount %>" />
+      </div>
+
+      <div class="actions">
+        <button type="submit">Create</button>
+      </div>
+    </form>
+  </body>
+</html>

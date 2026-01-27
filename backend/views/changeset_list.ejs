@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Changeset List</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+      th { background: #f6f8fa; }
+      .nav a { margin-right: 12px; }
+      code { font-family: Consolas, monospace; }
+    </style>
+  </head>
+  <body>
+    <div class="nav">
+      <a href="/changeset/list">List</a>
+      <a href="/changeset/create">Create</a>
+    </div>
+
+    <h1>All Changesets</h1>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Repo</th>
+          <th>Branch</th>
+          <th>Created</th>
+          <th>Versions</th>
+          <th>Total files</th>
+          <th>Mongo ID</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (items.length === 0) { %>
+          <tr>
+            <td colspan="7">No changesets yet.</td>
+          </tr>
+        <% } %>
+
+        <% items.forEach((item) => { %>
+          <tr>
+            <td><%= item.name %></td>
+            <td><code><%= item.repoUrl %></code></td>
+            <td><%= item.branch %></td>
+            <td><%= item.createdAt ? new Date(item.createdAt).toISOString() : '' %></td>
+            <td><%= item.versions %></td>
+            <td><%= item.totalFiles %></td>
+            <td><code><%= item._id %></code></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </body>
+</html>
