@@ -1,6 +1,6 @@
 import './FileSelector.css'
 
-function FileSelector({ files, selectedFileId, onFileChange }) {
+function FileSelector({ files, selectedFileId, onFileChange, changedFileIds = [] }) {
   return (
     <div className="file-selector">
       <label htmlFor="file-select" className="file-selector-label">
@@ -12,11 +12,14 @@ function FileSelector({ files, selectedFileId, onFileChange }) {
         value={selectedFileId}
         onChange={(e) => onFileChange(e.target.value)}
       >
-        {files.map((file) => (
-          <option key={file.id} value={file.id}>
-            {file.id}
-          </option>
-        ))}
+        {files.map((file) => {
+          const isChanged = changedFileIds.includes(file.id);
+          return (
+            <option key={file.id} value={file.id}>
+              {isChanged ? '● ' : ''}{file.id}
+            </option>
+          );
+        })}
       </select>
     </div>
   )

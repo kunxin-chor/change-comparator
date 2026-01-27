@@ -91,6 +91,25 @@ function ChangesetViewerPage() {
   }, [pairIndex, maxPairIndex])
 
   const allFiles = useMemo(() => getAllFilesFromChangesets(changesets, pairIndex), [changesets, pairIndex])
+
+  const changedFileIds = useMemo(() => {
+    if (!changesets[pairIndex] || !changesets[pairIndex + 1]) return []
+    const files1 = changesets[pairIndex].files
+    const files2 = changesets[pairIndex + 1].files
+    const ids = []
+
+    const f1Map = new Map(files1.map(f => [f.id, f.content]))
+    const f2Map = new Map(files2.map(f => [f.id, f.content]))
+
+    const allIds = new Set([...f1Map.keys(), ...f2Map.keys()])
+    for (const id of allIds) {
+      if (f1Map.get(id) !== f2Map.get(id)) {
+        ids.push(id)
+      }
+    }
+    return ids
+  }, [changesets, pairIndex])
+
   const file1 = useMemo(() => getFileFromChangeset(changesets, pairIndex, selectedFileId), [changesets, pairIndex, selectedFileId])
   const file2 = useMemo(() => getFileFromChangeset(changesets, pairIndex + 1, selectedFileId), [changesets, pairIndex, selectedFileId])
 
@@ -238,7 +257,12 @@ function ChangesetViewerPage() {
 
       <Container fluid className="mb-2">
         <ControlBar>
-          <FileSelector files={allFiles} selectedFileId={selectedFileId} onFileChange={setSelectedFileId} />
+          <FileSelector
+            files={allFiles}
+            selectedFileId={selectedFileId}
+            onFileChange={setSelectedFileId}
+            changedFileIds={changedFileIds}
+          />
           <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
         </ControlBar>
       </Container>
