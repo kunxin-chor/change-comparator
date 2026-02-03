@@ -8,9 +8,9 @@ function App() {
 
   return (
     <div>
-      <Navbar bg="primary" variant="dark" expand="lg" className="mb-3">
+      <Navbar bg="primary" variant="dark" expand="lg" className="py-1 mb-2">
         <Container fluid>
-          <Navbar.Brand>Code Diff Comment Tool</Navbar.Brand>
+          <Navbar.Brand className="fs-6">Code Diff Comment Tool</Navbar.Brand>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">
             <Nav className="me-auto">

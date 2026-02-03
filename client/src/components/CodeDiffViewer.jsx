@@ -12,6 +12,7 @@ function CodeDiffViewer({
   viewMode = 'hybrid',
 }) {
   const [selectedLineComment, setSelectedLineComment] = useState(null)
+  const [copyStatus, setCopyStatus] = useState('')
 
   const diff = Diff.diffLines(file1.content, file2.content)
 
@@ -80,6 +81,77 @@ function CodeDiffViewer({
 
   const diffLines = renderDiffLines()
 
+  const buildAskAiPrompt = () => {
+    const patch = Diff.createTwoFilesPatch(
+      fileName,
+      fileName,
+      file1.content || '',
+      file2.content || '',
+      `v${version1}`,
+      `v${version2}`
+    )
+
+    const header = [
+      'Task: Explain ONLY the differences shown in the diff below.',
+      'Do NOT propose corrections, refactors, improvements, or alternative implementations.',
+      'Do NOT judge code quality. Do NOT add new code. Do NOT suggest tests.',
+      'Just show the lines of code that have been changed, describe what changed in a neutral tone.',
+      '',
+      `File: ${fileName}`,
+      `Change: v${version1} -> v${version2}`,
+      '',
+      'DIFF (unified patch):',
+      '```diff',
+      patch || '',
+      '```',
+      '',
+      'SOURCE CODE BEFORE (v' + version1 + '):',
+      '```',
+      file1.content || '',
+      '```',
+      '',
+      'SOURCE CODE AFTER (v' + version2 + '):',
+      '```',
+      file2.content || '',
+      '```',
+      '',
+      'Output format:',
+      '- Start with a short 1-2 sentence overview of the change.',
+      '- Then list each change hunk and explain it line-by-line.',
+      '- End with a short summary of what was changed (still no suggestions).',
+    ]
+
+    return header.join('\n')
+  }
+
+  const copyAskAiPrompt = async () => {
+    const prompt = buildAskAiPrompt()
+    setCopyStatus('')
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(prompt)
+      } else {
+        const textarea = document.createElement('textarea')
+        textarea.value = prompt
+        textarea.setAttribute('readonly', '')
+        textarea.style.position = 'fixed'
+        textarea.style.top = '-1000px'
+        textarea.style.left = '-1000px'
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
+      }
+
+      setCopyStatus('Copied!')
+      window.setTimeout(() => setCopyStatus(''), 2000)
+    } catch (e) {
+      setCopyStatus('Copy failed')
+      window.setTimeout(() => setCopyStatus(''), 2500)
+    }
+  }
+
   return (
     <div className="code-diff-viewer">
       <div className="diff-header">
@@ -90,6 +162,13 @@ function CodeDiffViewer({
             <span className="separator">→</span>
             <span className="version new">v{version2}</span>
           </span>
+        </div>
+
+        <div className="diff-actions">
+          <button type="button" className="ask-ai-btn" onClick={copyAskAiPrompt}>
+            Ask AI
+          </button>
+          {copyStatus ? <span className="copy-status">{copyStatus}</span> : null}
         </div>
       </div>
 

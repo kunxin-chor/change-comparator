@@ -38,8 +38,8 @@ function ChangesetListPage() {
   }, [])
 
   return (
-    <Container className="py-4">
-      <div className="d-flex align-items-center justify-content-between mb-3">
+    <Container className="py-2">
+      <div className="d-flex align-items-center justify-content-between mb-2">
         <h3 className="mb-0">Changesets</h3>
         <Button variant="outline-secondary" size="sm" onClick={() => window.location.reload()}>
           Refresh

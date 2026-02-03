@@ -172,7 +172,7 @@ function ChangesetViewerPage() {
 
   return (
     <>
-      <Container fluid className="py-3">
+      <Container fluid className="py-2">
         <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
           <div>
             <h4 className="mb-1">{docMeta?.name || 'Changeset'}</h4>
@@ -188,7 +188,7 @@ function ChangesetViewerPage() {
             <select
               id="pairSelect"
               className="form-select form-select-sm"
-              style={{ width: 140 }}
+              style={{ width: 160 }}
               value={pairIndex}
               onChange={(e) => setPairIndex(parseInt(e.target.value, 10))}
             >
@@ -202,7 +202,7 @@ function ChangesetViewerPage() {
         </div>
       </Container>
 
-      <Container fluid className="mb-2">
+      <Container fluid className="mb-1">
         <ControlBar>
           <FileSelector
             files={allFiles}

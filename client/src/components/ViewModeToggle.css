@@ -1,11 +1,11 @@
 .view-mode-toggle {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .view-mode-label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #24292e;
 }
@@ -19,8 +19,8 @@
 }
 
 .view-mode-btn {
-  padding: 8px 16px;
-  font-size: 14px;
+  padding: 4px 10px;
+  font-size: 13px;
   font-weight: 500;
   color: #24292e;
   background: white;
