@@ -52,10 +52,42 @@ function ChangesetViewerPage() {
         if (cancelled) return
 
         setChangesets(loaded)
-        setPairIndex(0)
 
-        if (loaded[0]?.files?.length) {
-          setSelectedFileId(loaded[0].files[0].id)
+        const params = new URLSearchParams(window.location.search)
+        const desiredPairRaw = params.get('pair')
+        const desiredFileRaw = params.get('file')
+        const desiredV1Raw = params.get('v1')
+        const desiredV2Raw = params.get('v2')
+
+        const maxPair = Math.max(0, loaded.length - 2)
+
+        let nextPair = 0
+        if (desiredPairRaw != null) {
+          const n = parseInt(desiredPairRaw, 10)
+          nextPair = Number.isFinite(n) ? n : 0
+        } else if (desiredV1Raw != null) {
+          const v1 = parseInt(desiredV1Raw, 10)
+          const v2 = desiredV2Raw != null ? parseInt(desiredV2Raw, 10) : v1 + 1
+          const idx = loaded.findIndex((cs, i) => {
+            const a = cs?.version
+            const b = loaded[i + 1]?.version
+            return a === v1 && b === v2
+          })
+          nextPair = idx >= 0 ? idx : 0
+        }
+
+        if (nextPair < 0) nextPair = 0
+        if (nextPair > maxPair) nextPair = maxPair
+        setPairIndex(nextPair)
+
+        const filesForPair = getAllFilesFromChangesets(loaded, nextPair)
+        const desiredFile = desiredFileRaw || ''
+        const canUseDesiredFile = desiredFile && filesForPair.some((f) => f.id === desiredFile)
+
+        if (canUseDesiredFile) {
+          setSelectedFileId(desiredFile)
+        } else if (filesForPair.length > 0) {
+          setSelectedFileId(filesForPair[0].id)
         } else {
           setSelectedFileId('')
         }
@@ -109,10 +141,37 @@ function ChangesetViewerPage() {
   const file2 = useMemo(() => getFileFromChangeset(changesets, pairIndex + 1, selectedFileId), [changesets, pairIndex, selectedFileId])
 
   useEffect(() => {
-    if (!selectedFileId && allFiles.length > 0) {
+    if (!allFiles.length) {
+      if (selectedFileId) setSelectedFileId('')
+      return
+    }
+
+    const stillExists = selectedFileId && allFiles.some((f) => f.id === selectedFileId)
+    if (!stillExists) {
       setSelectedFileId(allFiles[0].id)
     }
   }, [selectedFileId, allFiles])
+
+  useEffect(() => {
+    if (changesets.length < 2) return
+    if (!selectedFileId) return
+    if (pairIndex < 0 || pairIndex > maxPairIndex) return
+
+    const v1 = changesets[pairIndex]?.version
+    const v2 = changesets[pairIndex + 1]?.version
+    if (!v1 || !v2) return
+
+    const params = new URLSearchParams(window.location.search)
+    params.set('pair', String(pairIndex))
+    params.set('file', selectedFileId)
+    params.set('v1', String(v1))
+    params.set('v2', String(v2))
+
+    const newSearch = `?${params.toString()}`
+    if (window.location.search !== newSearch) {
+      window.history.replaceState(null, '', `${window.location.pathname}${newSearch}`)
+    }
+  }, [pairIndex, selectedFileId, changesets, maxPairIndex])
 
   const pairOptions = useMemo(() => {
     const opts = []

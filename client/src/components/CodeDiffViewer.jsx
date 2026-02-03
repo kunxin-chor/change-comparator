@@ -92,10 +92,12 @@ function CodeDiffViewer({
     )
 
     const header = [
+      'You are a programmer coach',
       'Task: Explain ONLY the differences shown in the diff below.',
       'Do NOT propose corrections, refactors, improvements, or alternative implementations.',
       'Do NOT judge code quality. Do NOT add new code. Do NOT suggest tests.',
       'Just show the lines of code that have been changed, describe what changed in a neutral tone.',
+      'Explain the reasons for the change.',
       'Show the line numbers',
       '',
       `File: ${fileName}`,
@@ -117,8 +119,10 @@ function CodeDiffViewer({
       '```',
       '',
       'Output format:',
+      '- Display the lines of code that have been changed',
       '- Start with a short 1-2 sentence overview of the change.',
       '- Then list each change hunk and explain it line-by-line.',
+      '- Explain the reason for the change',
       '- End with a short summary of what was changed (still no suggestions).',
     ]
 
