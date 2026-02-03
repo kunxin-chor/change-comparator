@@ -96,6 +96,7 @@ function CodeDiffViewer({
       'Do NOT propose corrections, refactors, improvements, or alternative implementations.',
       'Do NOT judge code quality. Do NOT add new code. Do NOT suggest tests.',
       'Just show the lines of code that have been changed, describe what changed in a neutral tone.',
+      'Show the line numbers',
       '',
       `File: ${fileName}`,
       `Change: v${version1} -> v${version2}`,
