@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useRoute } from 'wouter'
 import { Alert, Container, Spinner } from 'react-bootstrap'
 import CodeDiffViewer from '../components/CodeDiffViewer'
-import CommentEditor from '../components/CommentEditor'
 import ControlBar from '../components/ControlBar'
 import FileSelector from '../components/FileSelector'
 import ViewModeToggle from '../components/ViewModeToggle'
@@ -26,10 +25,6 @@ function ChangesetViewerPage() {
   const [pairIndex, setPairIndex] = useState(0)
   const [selectedFileId, setSelectedFileId] = useState('')
   const [viewMode, setViewMode] = useState('hybrid')
-
-  // Comment editor state
-  const [showCommentEditor, setShowCommentEditor] = useState(false)
-  const [editingComment, setEditingComment] = useState(null)
 
   const id = params?.id
 
@@ -122,65 +117,17 @@ function ChangesetViewerPage() {
   const pairOptions = useMemo(() => {
     const opts = []
     for (let i = 0; i < changesets.length - 1; i++) {
-      const cs1 = changesets[i]
       const cs2 = changesets[i + 1]
-      const v1 = cs1?.version ?? i + 1
-      const v2 = cs2?.version ?? i + 2
+      // Display as v0 -> v1, v1 -> v2, ... and show the commit message for the right-hand version.
+      // First pair is special: there is no "v0 commit" in the data, but users expect the label.
+      const left = i
+      const right = i + 1
       const name2 = cs2?.name ? `: ${cs2.name}` : ''
-      opts.push({ index: i, label: `v${v1} → v${v2}${name2}` })
+      opts.push({ index: i, label: `v${left} → v${right}${name2}` })
     }
     return opts
   }, [changesets])
 
-  const handleAddComment = (lineNumber, fileName, version, fileKey) => {
-    setEditingComment({
-      lineNumber,
-      fileName,
-      version,
-      fileKey,
-      existingComment: null,
-    })
-    setShowCommentEditor(true)
-  }
-
-  const handleEditComment = (lineNumber, fileName, version, fileKey, existingComment) => {
-    setEditingComment({
-      lineNumber,
-      fileName,
-      version,
-      fileKey,
-      existingComment,
-    })
-    setShowCommentEditor(true)
-  }
-
-  const handleSaveComment = (comment) => {
-    if (!editingComment) return
-
-    const { lineNumber, fileKey } = editingComment
-    const changesetIndex = fileKey === 'file1' ? pairIndex : pairIndex + 1
-
-    setChangesets((prev) => {
-      const updated = [...prev]
-      const cs = updated[changesetIndex]
-      if (!cs) return prev
-
-      const fileIdx = cs.files.findIndex((f) => f.id === selectedFileId)
-      if (fileIdx === -1) return prev
-
-      const nextFile = { ...cs.files[fileIdx] }
-      nextFile.comments = { ...nextFile.comments, [lineNumber]: comment }
-
-      const nextFiles = [...cs.files]
-      nextFiles[fileIdx] = nextFile
-
-      updated[changesetIndex] = { ...cs, files: nextFiles }
-      return updated
-    })
-
-    setShowCommentEditor(false)
-    setEditingComment(null)
-  }
 
   if (!id) {
     return (
@@ -275,27 +222,12 @@ function ChangesetViewerPage() {
           version1={changesets[pairIndex].version}
           version2={changesets[pairIndex + 1].version}
           viewMode={viewMode}
-          onAddComment={handleAddComment}
-          onEditComment={handleEditComment}
         />
       ) : (
         <Container className="py-4">
           <Alert variant="secondary">No matching file found in both versions.</Alert>
         </Container>
       )}
-
-      <CommentEditor
-        show={showCommentEditor}
-        onHide={() => {
-          setShowCommentEditor(false)
-          setEditingComment(null)
-        }}
-        onSave={handleSaveComment}
-        existingComment={editingComment?.existingComment}
-        lineNumber={editingComment?.lineNumber}
-        fileName={editingComment?.fileName}
-        version={editingComment?.version}
-      />
     </>
   )
 }

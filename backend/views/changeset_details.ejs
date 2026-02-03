@@ -1,51 +1,189 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Changeset Details</title>
+<head>
+    <title>Changeset Details - <%= item.name %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-      body { font-family: Arial, sans-serif; margin: 24px; }
-      .nav a { margin-right: 12px; }
-      code { font-family: Consolas, monospace; }
-      .row { margin: 10px 0; }
-      .label { font-weight: 600; display: inline-block; width: 140px; }
-      .card { border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-top: 12px; }
-      .error { background: #ffeef0; border: 1px solid #d73a49; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
-      input { width: 520px; max-width: 100%; padding: 8px; }
+        .diff-line { font-family: 'Cascadia Code', 'Source Code Pro', monospace; white-space: pre; display: flex; font-size: 13px; line-height: 1.5; position: relative; }
+        .diff-added { background-color: #e6ffed; }
+        .diff-added .line-content { background-color: #acf2bd; }
+        .diff-removed { background-color: #ffeef0; }
+        .diff-removed .line-content { background-color: #fdb8c0; }
+        .line-num { width: 45px; color: #999; text-align: right; padding-right: 10px; user-select: none; border-right: 1px solid #ddd; background: #f8f9fa; }
+        .line-content { flex: 1; padding-left: 10px; overflow-x: auto; }
+        
+        .add-comment-btn { 
+            position: absolute; 
+            right: 10px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            display: none; 
+            background: #0d6efd; 
+            color: white; 
+            border: none; 
+            border-radius: 50%; 
+            width: 20px; 
+            height: 20px; 
+            font-size: 14px; 
+            line-height: 18px; 
+            text-align: center; 
+            cursor: pointer;
+            z-index: 10;
+        }
+        .diff-line:hover .add-comment-btn { display: block; }
+
+        .comment-box { background: #fff9c4; border-left: 4px solid #fbc02d; padding: 8px 12px; margin: 5px 0 5px 100px; font-size: 0.9em; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .diff-viewer { border: 1px solid #ddd; border-radius: 4px; overflow: hidden; background: white; }
+        
+        #editor-modal .modal-body { height: 400px; display: flex; flex-direction: column; }
+        #markdown-editor { flex: 1; font-family: monospace; resize: none; margin-bottom: 10px; }
+        #markdown-preview { flex: 1; border: 1px solid #ddd; padding: 10px; overflow-y: auto; background: #fdfdfd; }
     </style>
-  </head>
-  <body>
-    <div class="nav">
-      <a href="/changeset/list">List</a>
-      <a href="/changeset/create">Create</a>
-    </div>
-
-    <h1>Changeset Details</h1>
-
-    <% if (error) { %>
-      <div class="error"><%= error %></div>
-    <% } %>
-
-    <div class="card">
-      <div class="row"><span class="label">Name</span> <%= item.name %></div>
-      <div class="row"><span class="label">Repo URL</span> <code><%= item.repoUrl %></code></div>
-      <div class="row"><span class="label">Branch</span> <%= item.branch %></div>
-      <div class="row"><span class="label">Created</span> <%= item.createdAt ? new Date(item.createdAt).toISOString() : '' %></div>
-      <div class="row"><span class="label">Last synced</span> <%= item.lastSyncedAt ? new Date(item.lastSyncedAt).toISOString() : 'Not synced yet' %></div>
-      <div class="row"><span class="label">Mongo ID</span> <code><%= item._id %></code></div>
-    </div>
-
-    <div class="card">
-      <h2 style="margin-top: 0;">Sync</h2>
-      <form method="POST" action="/changeset/<%= item._id %>/sync" style="margin: 0;">
-        <div class="row">
-          <span class="label">GitHub token</span>
-          <input type="text" name="token" placeholder="Optional (required for private repos / higher rate limits)" />
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-dark mb-4 shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/changeset/list">Change Comparator (Backend)</a>
         </div>
-        <div class="row">
-          <button type="submit">Sync now</button>
+    </nav>
+
+    <div class="container pb-5">
+        <!-- Header & Version Selection (Omitted for brevity, assuming same as before) -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-body">
+                <h3><%= item.name %></h3>
+                <p class="text-muted small"><code><%= item.repoUrl %></code></p>
+                <div class="d-flex gap-2">
+                    <a href="/changeset/list" class="btn btn-outline-secondary btn-sm">Back</a>
+                </div>
+            </div>
         </div>
-      </form>
+
+        <form action="" method="GET" class="row g-2 mb-4 bg-white p-3 border rounded shadow-sm align-items-end">
+            <div class="col-12">
+                <label class="form-label small fw-bold">GitHub Token (for compare / private repos)</label>
+                <input name="token" type="password" value="<%= token || '' %>" class="form-control form-control-sm" placeholder="ghp_...">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label small fw-bold">Versions</label>
+                <select name="pair" class="form-select form-select-sm">
+                    <% for (let i = 0; i < (item.changesets.length - 1); i++) { %>
+                        <% const right = item.changesets[i + 1]; %>
+                        <option value="<%= i %>" <%= (pairIndex == i) ? 'selected' : '' %>>
+                            v<%= i %> → v<%= i + 1 %>: <%= right.name %>
+                        </option>
+                    <% } %>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">File</label>
+                <select name="file" class="form-select form-select-sm">
+                    <% allFiles.forEach(f => { %>
+                        <option value="<%= f %>" <%= selectedFile === f ? 'selected' : '' %>>
+                            <%= changedFileIds.includes(f) ? '● ' : '' %><%= f %>
+                        </option>
+                    <% }) %>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-dark btn-sm w-100">Compare</button>
+            </div>
+        </form>
+
+        <% if (selectedFile) { %>
+            <div class="diff-viewer shadow-sm">
+                <div class="bg-light p-2 border-bottom fw-bold small"><%= selectedFile %></div>
+                <% diffLines.forEach((line, idx) => { %>
+                    <div class="diff-line <%= line.type === 'added' ? 'diff-added' : (line.type === 'removed' ? 'diff-removed' : '') %>">
+                        <div class="line-num"><%= line.line1 || '' %></div>
+                        <div class="line-num"><%= line.line2 || '' %></div>
+                        <div class="line-content"><%= line.text %></div>
+                        
+                        <% if (line.line1 || line.line2) { %>
+                            <button
+                                class="add-comment-btn"
+                                type="button"
+                                data-vidx="<%= line.type === 'removed' ? item.changesets[v1].version : item.changesets[v2].version %>"
+                                data-file="<%= selectedFile %>"
+                                data-line="<%= line.type === 'removed' ? line.line1 : line.line2 %>"
+                                onclick="openEditor(this.dataset.vidx, this.dataset.file, this.dataset.line)"
+                            >+</button>
+                        <% } %>
+                    </div>
+
+                    <% if (line.comment || line.comment1 || line.comment2) { %>
+                        <div class="comment-box markdown-body">
+                            <%= line.comment || line.comment2 || line.comment1 %>
+                        </div>
+                    <% } %>
+                <% }) %>
+            </div>
+        <% } %>
     </div>
-  </body>
+
+    <!-- Markdown Editor Modal -->
+    <div class="modal fade" id="editor-modal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Comment (Markdown)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="comment-form" action="/changeset/<%= item._id %>/comment" method="POST">
+                        <input type="hidden" name="pair" value="<%= pairIndex %>">
+                        <input type="hidden" name="token" value="<%= token || '' %>">
+                        <input type="hidden" name="v1" value="<%= v1 %>">
+                        <input type="hidden" name="v2" value="<%= v2 %>">
+                        <input type="hidden" name="filePath" id="modal-file-path">
+                        <input type="hidden" name="versionIndex" id="modal-version-index">
+                        <input type="hidden" name="lineNumber" id="modal-line-number">
+                        
+                        <div class="row h-100">
+                            <div class="col-md-6 d-flex flex-column">
+                                <label class="small fw-bold">Editor</label>
+                                <textarea name="text" id="markdown-editor" class="form-control" placeholder="Write markdown..."></textarea>
+                            </div>
+                            <div class="col-md-6 d-flex flex-column">
+                                <label class="small fw-bold">Preview</label>
+                                <div id="markdown-preview"></div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="comment-form" class="btn btn-primary">Save Comment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const editor = document.getElementById('markdown-editor');
+        const preview = document.getElementById('markdown-preview');
+        const modal = new bootstrap.Modal(document.getElementById('editor-modal'));
+
+        editor.addEventListener('input', () => {
+            preview.innerHTML = marked.parse(editor.value);
+        });
+
+        function openEditor(vIdx, filePath, lineNum) {
+            document.getElementById('modal-version-index').value = vIdx;
+            document.getElementById('modal-file-path').value = filePath;
+            document.getElementById('modal-line-number').value = lineNum;
+            editor.value = '';
+            preview.innerHTML = '';
+            modal.show();
+        }
+
+        // Render existing comments on load
+        document.querySelectorAll('.comment-box').forEach(box => {
+            box.innerHTML = marked.parse(box.innerText);
+        });
+    </script>
+</body>
 </html>

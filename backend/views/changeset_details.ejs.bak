@@ -1,0 +1,116 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Changeset Details</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; }
+      .nav a { margin-right: 12px; }
+      code { font-family: Consolas, monospace; }
+      .row { margin: 10px 0; }
+      .label { font-weight: 600; display: inline-block; width: 140px; }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/changeset/list">Change Comparator (Backend)</a>
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3><%= item.name %></h3>
+                <p class="text-muted"><%= item.repoUrl %> (<%= item.branch %>)</p>
+                <div class="d-flex gap-3">
+                    <a href="/changeset/list" class="btn btn-outline-secondary btn-sm">&larr; Back to List</a>
+                    <form action="/changeset/<%= item._id %>/sync" method="POST" class="d-flex gap-2">
+                        <input type="password" name="token" placeholder="GitHub Token (optional)" class="form-control form-control-sm" style="width: 200px;">
+                        <button type="submit" class="btn btn-primary btn-sm">Sync from GitHub</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <form action="" method="GET" class="row g-3 mb-4 bg-white p-3 border rounded shadow-sm">
+            <div class="col-md-3">
+                <label class="form-label small">Version 1</label>
+                <select name="v1" class="form-select form-select-sm">
+                    <% item.changesets.forEach((cs, i) => { %>
+                        <option value="<%= i %>" <%= v1 == i ? 'selected' : '' %>>v<%= cs.version %>: <%= cs.name %></option>
+                    <% }) %>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small">Version 2</label>
+                <select name="v2" class="form-select form-select-sm">
+                    <% item.changesets.forEach((cs, i) => { %>
+                        <option value="<%= i %>" <%= v2 == i ? 'selected' : '' %>>v<%= cs.version %>: <%= cs.name %></option>
+                    <% }) %>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small">File</label>
+                <select name="file" class="form-select form-select-sm">
+                    <% allFiles.forEach(f => { %>
+                        <option value="<%= f %>" <%= selectedFile === f ? 'selected' : '' %>><%= f %></option>
+                    <% }) %>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-dark btn-sm w-100">Compare</button>
+            </div>
+        </form>
+
+        <% if (selectedFile) { %>
+            <div class="bg-white border rounded shadow-sm overflow-hidden">
+                <div class="bg-light p-2 border-bottom small fw-bold">
+                    <%= selectedFile %>
+                </div>
+                <div class="diff-viewer p-2">
+                    <% diffLines.forEach((line, idx) => { %>
+                        <div class="diff-line <%= line.type === 'added' ? 'diff-added' : (line.type === 'removed' ? 'diff-removed' : '') %>">
+                            <div class="line-num"><%= line.line1 || '' %></div>
+                            <div class="line-num"><%= line.line2 || '' %></div>
+                            <div class="line-content"><%= line.text %></div>
+                        </div>
+
+                        <% if (line.comment || line.comment1 || line.comment2) { %>
+                            <div class="comment-box">
+                                <strong>Comment:</strong> <%= line.comment || line.comment2 || line.comment1 %>
+                            </div>
+                        <% } %>
+
+                        <% if (line.line1 || line.line2) { %>
+                            <div class="comment-form">
+                                <button class="btn btn-link btn-sm p-0 text-decoration-none" onclick="toggleCommentForm('form-<%= idx %>')">+ Add Comment</button>
+                                <form id="form-<%= idx %>" action="/changeset/<%= item._id %>/comment" method="POST" style="display: none;" class="mt-2">
+                                    <input type="hidden" name="v1" value="<%= v1 %>">
+                                    <input type="hidden" name="v2" value="<%= v2 %>">
+                                    <input type="hidden" name="filePath" value="<%= selectedFile %>">
+                                    <input type="hidden" name="versionIndex" value="<%= line.type === 'removed' ? v1 : v2 %>">
+                                    <input type="hidden" name="lineNumber" value="<%= line.type === 'removed' ? line.line1 : line.line2 %>">
+                                    <div class="input-group">
+                                        <input type="text" name="text" class="form-control form-control-sm" placeholder="Type comment..." required>
+                                        <button type="submit" class="btn btn-success btn-sm">Save</button>
+                                    </div>
+                                </form>
+                            </div>
+                        <% } %>
+                    <% }) %>
+                </div>
+            </div>
+        <% } else { %>
+            <div class="alert alert-info">Select a file to see differences.</div>
+        <% } %>
+    </div>
+
+    <script>
+        function toggleCommentForm(id) {
+            const f = document.getElementById(id);
+            f.style.display = f.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>

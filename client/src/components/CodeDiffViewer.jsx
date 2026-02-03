@@ -10,8 +10,6 @@ function CodeDiffViewer({
   version1,
   version2,
   viewMode = 'hybrid',
-  onAddComment,
-  onEditComment,
 }) {
   const [selectedLineComment, setSelectedLineComment] = useState(null)
 
@@ -123,7 +121,11 @@ function CodeDiffViewer({
                         className="comment-indicator clickable"
                         onClick={() =>
                           setSelectedLineComment({
-                            ...row.comment,
+                            text: typeof row.comment === 'string' ? row.comment : row.comment?.text,
+                            markdown:
+                              typeof row.comment === 'string'
+                                ? row.comment
+                                : row.comment?.markdown || row.comment?.text,
                             key: row.key,
                             file: row.file,
                             lineNum: row.lineNum,
@@ -135,22 +137,7 @@ function CodeDiffViewer({
                         💬
                       </span>
                     ) : (
-                      onAddComment && (
-                        <button
-                          className="add-comment-btn"
-                          onClick={() =>
-                            onAddComment(
-                              row.lineNum,
-                              fileName,
-                              row.type === 'removed' ? version1 : version2,
-                              row.type === 'removed' ? 'file1' : 'file2'
-                            )
-                          }
-                          title="Add comment"
-                        >
-                          +💬
-                        </button>
-                      )
+                      null
                     )}
                   </td>
                 </tr>
@@ -165,23 +152,6 @@ function CodeDiffViewer({
               <div className="comment-header">
                 <h3>Comment</h3>
                 <div>
-                  {onEditComment && (
-                    <button
-                      className="edit-comment-btn"
-                      onClick={() => {
-                        onEditComment(
-                          selectedLineComment.lineNum,
-                          fileName,
-                          selectedLineComment.version,
-                          selectedLineComment.key.includes('removed') ? 'file1' : 'file2',
-                          selectedLineComment
-                        )
-                      }}
-                      title="Edit comment"
-                    >
-                      ✏️
-                    </button>
-                  )}
                   <button className="close-comment-btn" onClick={() => setSelectedLineComment(null)}>
                     ×
                   </button>
